@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.3
+// @version      2023.10.3.4
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -90,7 +90,6 @@ class SnowModel {
         });
     }
     initialize() {
-        // Add search field
         this.addElements();
         this.connectToUi();
     }

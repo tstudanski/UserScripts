@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.1
+// @version      2023.10.3.2
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=service-now.com
+// @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
+// @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
 // @grant        none
 // ==/UserScript==
 

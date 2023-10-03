@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.5
+// @version      2023.10.3.6
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -48,8 +48,8 @@ class SnowModel {
     addElements() {
         var header = document.getElementsByClassName('navbar-header')[0];
         var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
-        var button = elmtify('<button id="gsButton" class="btn btn-primary nav-item" type="submit">Search</button>');
-        var globalTable = elmtify('<a class="btn btn-primary nav-item" href="https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F">Go To Global Search Table</a>');
+        var button = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
+        var globalTable = elmtify('<input class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
 
         header.appendChild(input);
         header.appendChild(button);

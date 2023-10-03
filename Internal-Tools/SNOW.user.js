@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.4
+// @version      2023.10.3.5
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -35,6 +35,10 @@ document.SnowModel = {
         RequestItem: {
             tag: 'RITM',
             searchTemplate: 'https://mac.service-now.com/nav_to.do?uri=%2Fsc_req_item_list.do%3Fsysparm_first_row%3D1%26sysparm_query%3DGOTOnumber%3D@Ticket%26sysparm_query_encoded%3DGOTOnumber%3D@Ticket%26sysparm_view%3Dess'
+        },
+        Task: {
+            tag: '',
+            searchTemplate: 'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3Fsysparm_first_row%3D1%26sysparm_query%3DGOTOnumber%3D@Ticket%26sysparm_query_encoded%3DGOTOnumber%3D@Ticket%26sysparm_view%3D'
         }
     }
 }
@@ -45,9 +49,11 @@ class SnowModel {
         var header = document.getElementsByClassName('navbar-header')[0];
         var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
         var button = elmtify('<button id="gsButton" class="btn btn-primary nav-item" type="submit">Search</button>');
+        var globalTable = elmtify('<a class="btn btn-primary nav-item" href="https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F">Go To Global Search Table</a>');
 
         header.appendChild(input);
         header.appendChild(button);
+        header.appendChild(globalTable);
     }
     findTag(text) {
         var tag = null;
@@ -55,13 +61,12 @@ class SnowModel {
             var cType = document.SnowModel.Types[type];
             if (text.indexOf(cType.tag) == 0) {
                 tag = cType;
-                console.log('Found ' + cType.tag);
+                console.log('Found ' + type);
                 break;
             }
         }
-        if (tag === null) {
-            console.error("Could not identify type for: " + text);
-            return null;
+        if (tag === document.SnowModel.Types.Task) {
+            console.warn("Could not identify type for: " + text + ' so attempting to search via Task');
         }
         tag.url = tag.searchTemplate.replaceAll('@Ticket', text);
         return tag;

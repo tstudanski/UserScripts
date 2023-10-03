@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         LMS Training Window Resize
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.1
+// @version      2023.10.3.2
 // @description  Resizes the window so there are no scroll bars
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.certpointsystems.com/repository/online/scorm/scp2006/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=certpointsystems.com
+// @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/LMS-Training.user.js
+// @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/LMS-Training.user.js
 // @grant        none
 // ==/UserScript==
 

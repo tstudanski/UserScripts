@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         August Ash New Request Button
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.1
+// @version      2023.10.3.2
 // @description  Adds helpful buttons to the site
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://changes.augustash.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=augustash.com
+// @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Venders/August-Ash.user.js
+// @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Venders/August-Ash.user.js
 // @grant        none
 // ==/UserScript==
 

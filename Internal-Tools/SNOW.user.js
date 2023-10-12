@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.3.6
+// @version      2023.10.12.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -45,15 +45,37 @@ document.SnowModel = {
 
 class SnowModel {
     constructor() {}
+    venderSites = [
+        { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },
+        { name: 'Granicus Support', url: 'https://support.granicus.com/s' }
+    ]
+    addVendors() {
+        var template = elmtify('<div class="col-auto"><img src="" /> <a class="dropdown-item" target="_blank" href="#">Action</a></div>');
+        var iconBase = 'https://www.google.com/s2/favicons?sz=16&domain=';
+        var menu = document.getElementById('vendorLinks');
+        this.venderSites.forEach(vendor => {
+            var item = template.cloneNode(true);
+            var link = item.getElementsByClassName('dropdown-item')[0];
+            link.href = vendor.url;
+            link.textContent = vendor.name;
+            var icon = item.getElementsByTagName('img')[0];
+            icon.src = iconBase + vendor.url;
+            console.log(item);
+            menu.appendChild(item);
+        });
+    }
     addElements() {
         var header = document.getElementsByClassName('navbar-header')[0];
         var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
         var button = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
         var globalTable = elmtify('<input class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
+        var vendorDropdown = elmtify('<div class="dropdown"><a class="btn btn-primary nav-item dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">Vendor Support Links</a><div id="vendorLinks" class="dropdown-menu"></div></div>');
 
         header.appendChild(input);
         header.appendChild(button);
         header.appendChild(globalTable);
+        header.appendChild(vendorDropdown);
+        this.addVendors();
     }
     findTag(text) {
         var tag = null;

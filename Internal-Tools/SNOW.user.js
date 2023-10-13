@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.12.0
+// @version      2023.10.13.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -60,7 +60,6 @@ class SnowModel {
             link.textContent = vendor.name;
             var icon = item.getElementsByTagName('img')[0];
             icon.src = iconBase + vendor.url;
-            console.log(item);
             menu.appendChild(item);
         });
     }
@@ -83,7 +82,6 @@ class SnowModel {
             var cType = document.SnowModel.Types[type];
             if (text.indexOf(cType.tag) == 0) {
                 tag = cType;
-                console.log('Found ' + type);
                 break;
             }
         }
@@ -95,11 +93,11 @@ class SnowModel {
     }
     search() {
         var text = document.getElementById('gSearch').value.trim();
-        console.log('Attempted to search: ' + text);
+        console.debug('Attempted to search: ' + text);
         var tag = document.snowModel.findTag(text);
 
         if (tag != null) {
-            console.log('Generated search URL: ' + tag.url);
+            console.debug('Generated search URL: ' + tag.url);
             window.location.href = tag.url;
         }
     }
@@ -116,9 +114,27 @@ class SnowModel {
             }
         });
     }
+    convertCommentLinks() {
+        // Need to go into iframe 1st
+        var frame = document.getElementById('gsft_main').contentWindow.document;
+        // regex copied from: https://stackoverflow.com/a/8234912/3416155
+        var urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/;
+        var linkTemplate = '<a href="@url" target="_blank">@url</a>';
+        var comments = Array.from(frame.getElementsByClassName('sn-widget-textblock-body'));
+        comments.forEach(comment => {
+            var match = comment.innerHTML.match(urlRegex);
+            if (match) {
+                var newHtml = match.input.substring(0, match.index);
+                newHtml += linkTemplate.replaceAll('@url', match[0]);
+                newHtml += match.input.substring(match.index + match[0].length);
+                comment.innerHTML = newHtml;
+            }
+        });
+    }
     initialize() {
         this.addElements();
         this.connectToUi();
+        this.convertCommentLinks();
     }
 }
 

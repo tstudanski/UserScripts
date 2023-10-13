@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.13.0
+// @version      2023.10.13.1
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -49,6 +49,11 @@ class SnowModel {
         { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },
         { name: 'Granicus Support', url: 'https://support.granicus.com/s' }
     ]
+    Constants = {
+        // regex copied from: https://stackoverflow.com/a/8234912/3416155
+        urlRegex: /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/,
+        linkTemplate: '<a href="@url" target="_blank">@url</a>'
+    }
     addVendors() {
         var template = elmtify('<div class="col-auto"><img src="" /> <a class="dropdown-item" target="_blank" href="#">Action</a></div>');
         var iconBase = 'https://www.google.com/s2/favicons?sz=16&domain=';
@@ -114,21 +119,24 @@ class SnowModel {
             }
         });
     }
+    generateLinks(remainingText) {
+        var match = remainingText.match(this.Constants.urlRegex);
+        if (!match) {
+            return remainingText;
+        }
+        console.log('Found URL: ' + match[0]);
+        var newHtml = match.input.substring(0, match.index);
+        newHtml += this.Constants.linkTemplate.replaceAll('@url', match[0]);
+        newHtml += this.generateLinks(match.input.substring(match.index + match[0].length));
+        return newHtml;
+    }
     convertCommentLinks() {
         // Need to go into iframe 1st
         var frame = document.getElementById('gsft_main').contentWindow.document;
-        // regex copied from: https://stackoverflow.com/a/8234912/3416155
-        var urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/;
-        var linkTemplate = '<a href="@url" target="_blank">@url</a>';
         var comments = Array.from(frame.getElementsByClassName('sn-widget-textblock-body'));
         comments.forEach(comment => {
-            var match = comment.innerHTML.match(urlRegex);
-            if (match) {
-                var newHtml = match.input.substring(0, match.index);
-                newHtml += linkTemplate.replaceAll('@url', match[0]);
-                newHtml += match.input.substring(match.index + match[0].length);
-                comment.innerHTML = newHtml;
-            }
+            var newHtml = this.generateLinks(comment.innerHTML);
+            comment.innerHTML = newHtml;
         });
     }
     initialize() {

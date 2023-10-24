@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.13.1
+// @version      2023.10.24.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -70,6 +70,10 @@ class SnowModel {
     }
     addElements() {
         var header = document.getElementsByClassName('navbar-header')[0];
+        if (header == undefined) {
+            console.error('Expected header is not present.  Not adding elements.');
+            return;
+        }
         var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
         var button = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
         var globalTable = elmtify('<input class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
@@ -109,6 +113,10 @@ class SnowModel {
     connectToUi() {
         var self = this;
         var searchButton = document.getElementById('gsButton');
+        if (searchButton == undefined) {
+            console.error('Global Search button isn\'t present');
+            return;
+        }
         searchButton.onclick = self.search;
 
         // Add search via ENTER key

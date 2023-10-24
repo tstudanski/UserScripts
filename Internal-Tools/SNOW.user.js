@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.24.0
+// @version      2023.10.24.1
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -44,7 +44,9 @@ document.SnowModel = {
 }
 
 class SnowModel {
-    constructor() {}
+    constructor() {
+        this.frame = document.getElementById('gsft_main').contentWindow.document;
+    }
     venderSites = [
         { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },
         { name: 'Granicus Support', url: 'https://support.granicus.com/s' }
@@ -126,6 +128,21 @@ class SnowModel {
                 document.getElementById("gsButton").click();
             }
         });
+
+        // Add post via Ctrl + ENTER key combo
+        if (this.frame == undefined) {
+            console.error('No iframe detected');
+            return;
+        }
+        this.frame.getElementById("activity-stream-textarea").addEventListener("keydown", function(event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                event.preventDefault();
+                var button = self.frame.getElementsByClassName('activity-submit')[0];
+                if (button != undefined) {
+                    button.click();
+                }
+            }
+        });
     }
     generateLinks(remainingText) {
         var match = remainingText.match(this.Constants.urlRegex);
@@ -140,8 +157,11 @@ class SnowModel {
     }
     convertCommentLinks() {
         // Need to go into iframe 1st
-        var frame = document.getElementById('gsft_main').contentWindow.document;
-        var comments = Array.from(frame.getElementsByClassName('sn-widget-textblock-body'));
+        if (this.frame == undefined) {
+            console.error('No iframe detected');
+            return;
+        }
+        var comments = Array.from(this.frame.getElementsByClassName('sn-widget-textblock-body'));
         comments.forEach(comment => {
             var newHtml = this.generateLinks(comment.innerHTML);
             comment.innerHTML = newHtml;
@@ -154,7 +174,7 @@ class SnowModel {
     }
 }
 
-document.snowModel = new SnowModel();
 window.onload = function() {
+    document.snowModel = new SnowModel();
     document.snowModel.initialize();
 }

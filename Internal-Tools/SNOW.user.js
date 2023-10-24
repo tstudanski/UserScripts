@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.24.1
+// @version      2023.10.24.2
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -45,7 +45,12 @@ document.SnowModel = {
 
 class SnowModel {
     constructor() {
-        this.frame = document.getElementById('gsft_main').contentWindow.document;
+        var mainFrame = document.getElementById('gsft_main');
+        if (mainFrame == undefined) {
+            console.error('Could not find main iframe');
+        } else {
+            this.frame = mainFrame.contentWindow.document;
+        }
     }
     venderSites = [
         { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },

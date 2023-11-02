@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         August Ash New Request Button
 // @namespace    https://github.com/tstudanski/
-// @version      2023.11.2.1
+// @version      2023.11.2.2
 // @description  Adds helpful functions to the site
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://changes.augustash.com/*
@@ -14,6 +14,9 @@
 'use strict';
 class Enhancements {
     constructor() {}
+    areDetailsPresent() {
+        return $('.request-details').length > 0;
+    }
     addRequestButton() {
         var nav = $('.nav-inner')[0];
         nav.innerHTML = nav.innerHTML + nav.childNodes[7].data;
@@ -71,11 +74,14 @@ class Enhancements {
         });
     }
     run() {
+        // request spectific features
+        if (this.areDetailsPresent()) {
+            this.addJumpButtons();
+            this.changeUrlToLink();
+            this.stickyDetails();
+            this.easyEntry();
+        }
         this.addRequestButton();
-        this.addJumpButtons();
-        this.changeUrlToLink();
-        this.stickyDetails();
-        this.easyEntry();
     }
 }
 

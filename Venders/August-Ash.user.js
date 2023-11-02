@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         August Ash New Request Button
 // @namespace    https://github.com/tstudanski/
-// @version      2023.11.2.0
+// @version      2023.11.2.1
 // @description  Adds helpful functions to the site
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://changes.augustash.com/*
@@ -12,8 +12,6 @@
 // ==/UserScript==
 
 'use strict';
-// TODO: Add ctrl + enter to submit new message on request page
-// Your code here...
 class Enhancements {
     constructor() {}
     addRequestButton() {
@@ -60,11 +58,24 @@ class Enhancements {
         details.style.position = 'sticky';
         details.style.top = '5px';
     }
+    easyEntry() {
+        // Add submit via Ctrl + ENTER key combo
+        document.getElementById("request_comment_body").addEventListener("keydown", function(event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                event.preventDefault();
+                var button = $("input[name='commit']")[0];
+                if (button != undefined) {
+                    button.click();
+                }
+            }
+        });
+    }
     run() {
         this.addRequestButton();
         this.addJumpButtons();
         this.changeUrlToLink();
         this.stickyDetails();
+        this.easyEntry();
     }
 }
 

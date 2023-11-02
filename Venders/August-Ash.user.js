@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         August Ash New Request Button
 // @namespace    https://github.com/tstudanski/
-// @version      2023.11.2.2
+// @version      2023.11.2.3
 // @description  Adds helpful functions to the site
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://changes.augustash.com/*
@@ -28,7 +28,6 @@ class Enhancements {
         toBottom.onclick = function() {
             $('html, body').animate({ scrollTop: $('.comment-list').height() }, 'slow');
         };
-        $('.side-column').append(toBottom);
 
         var toTop = document.createElement('a');
         toTop.textContent = 'Return to Top';
@@ -36,7 +35,10 @@ class Enhancements {
         toTop.onclick = function() {
             $('html, body').animate({ scrollTop: 0 }, 'slow');
         };
-        $('.comment-form-controls').append(toTop);
+
+        var sideColumn = $('.side-column');
+        sideColumn.append(toBottom);
+        sideColumn.append(toTop);
     }
     changeUrlToLink() {
         var linkDd = this.FindUrlElement();

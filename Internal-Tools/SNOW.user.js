@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.24.2
+// @version      2023.11.8.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -45,12 +45,7 @@ document.SnowModel = {
 
 class SnowModel {
     constructor() {
-        var mainFrame = document.getElementById('gsft_main');
-        if (mainFrame == undefined) {
-            console.error('Could not find main iframe');
-        } else {
-            this.frame = mainFrame.contentWindow.document;
-        }
+        this.frame = null;
     }
     venderSites = [
         { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },
@@ -59,7 +54,38 @@ class SnowModel {
     Constants = {
         // regex copied from: https://stackoverflow.com/a/8234912/3416155
         urlRegex: /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/,
-        linkTemplate: '<a href="@url" target="_blank">@url</a>'
+        linkTemplate: '<a href="@url" target="_blank">@url</a>',
+        frameCheck: 200 // time between iframe change check in ms
+    }
+    updateFrame() {
+        var mainFrame = document.getElementById('gsft_main');
+        if (mainFrame == undefined) {
+            console.error('Could not find main iframe');
+        } else {
+            this.frame = mainFrame.contentWindow.document;
+        }
+        this.frameBasedChanges();
+    };
+    // based on code found here: https://stackoverflow.com/a/20156615/3416155
+    monitorFrame() {
+        // Check for changes
+        var self = this;
+        var frame = window.document.children[0].getElementsByTagName('iframe')[0];
+        if (frame != null) {
+            var observer = new MutationObserver(function(e) {
+                if (e[0].removedNodes) {
+                    // update if different
+                    console.debug('iframe changed');
+                    self.updateFrame();
+                }
+            });
+            observer.observe(frame, { attributes: true });
+        } else {
+            console.debug('frame not loaded yet');
+            setTimeout(function() {
+                self.monitorFrame();
+            }, self.Constants.frameCheck);
+        }
     }
     addVendors() {
         var template = elmtify('<div class="col-auto"><img src="" /> <a class="dropdown-item" target="_blank" href="#">Action</a></div>');
@@ -133,13 +159,20 @@ class SnowModel {
                 document.getElementById("gsButton").click();
             }
         });
-
+    }
+    addCommentViaCtrlEnter() {
+        var self = this;
         // Add post via Ctrl + ENTER key combo
         if (this.frame == undefined) {
             console.error('No iframe detected');
             return;
         }
-        this.frame.getElementById("activity-stream-textarea").addEventListener("keydown", function(event) {
+        var activityStream = this.frame.getElementById("activity-stream-textarea");
+        if (activityStream == undefined) {
+            console.error('No activity stream detected');
+            return;
+        }
+        activityStream.addEventListener("keydown", function(event) {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
                 event.preventDefault();
                 var button = self.frame.getElementsByClassName('activity-submit')[0];
@@ -154,7 +187,7 @@ class SnowModel {
         if (!match) {
             return remainingText;
         }
-        console.log('Found URL: ' + match[0]);
+        console.debug('Found URL: ' + match[0]);
         var newHtml = match.input.substring(0, match.index);
         newHtml += this.Constants.linkTemplate.replaceAll('@url', match[0]);
         newHtml += this.generateLinks(match.input.substring(match.index + match[0].length));
@@ -172,10 +205,14 @@ class SnowModel {
             comment.innerHTML = newHtml;
         });
     }
+    frameBasedChanges() {
+        this.addCommentViaCtrlEnter();
+        this.convertCommentLinks();
+    }
     initialize() {
         this.addElements();
         this.connectToUi();
-        this.convertCommentLinks();
+        this.monitorFrame();
     }
 }
 

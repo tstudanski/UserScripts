@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.11.8.0
+// @version      2023.12.7.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -40,12 +40,31 @@ document.SnowModel = {
             tag: '',
             searchTemplate: 'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3Fsysparm_first_row%3D1%26sysparm_query%3DGOTOnumber%3D@Ticket%26sysparm_query_encoded%3DGOTOnumber%3D@Ticket%26sysparm_view%3D'
         }
+    },
+    PageTypes: {
+        TimeCard: "TimeCard",
+        Unknown: "Unknown"
+    }
+}
+
+// If testFunc returns true then runs callback, otherwise will test again after waitTime (in ms) has past
+// TODO pull this out into a utility file
+function waitFor(waitTime, testFunc, callback) {
+    if (testFunc()) {
+        callback();
+    } else {
+        console.log('Had to wait');
+        setTimeout(function() {
+            waitFor(waitTime, testFunc, callback);
+        }, waitTime);
     }
 }
 
 class SnowModel {
     constructor() {
         this.frame = null;
+        this.workingOn = null;
+        this.delayTime = 100; // in milliseconds
     }
     venderSites = [
         { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },
@@ -194,25 +213,97 @@ class SnowModel {
         return newHtml;
     }
     convertCommentLinks() {
-        // Need to go into iframe 1st
-        if (this.frame == undefined) {
-            console.error('No iframe detected');
-            return;
+            // Need to go into iframe 1st
+            if (this.frame == undefined) {
+                console.error('No iframe detected');
+                return;
+            }
+            var comments = Array.from(this.frame.getElementsByClassName('sn-widget-textblock-body'));
+            comments.forEach(comment => {
+                var newHtml = this.generateLinks(comment.innerHTML);
+                comment.innerHTML = newHtml;
+            });
         }
-        var comments = Array.from(this.frame.getElementsByClassName('sn-widget-textblock-body'));
-        comments.forEach(comment => {
-            var newHtml = this.generateLinks(comment.innerHTML);
-            comment.innerHTML = newHtml;
-        });
+        // Identifies which type of page we are currently working with
+    identifyPageType() {
+            if (window.location.href.indexOf('sysparm_timesheet_id') >= 0) {
+                return document.SnowModel.PageTypes.TimeCard;
+            } else {
+                return document.SnowModel.PageTypes.Unknown;
+            }
+        }
+        // Adds a Clean button to the UI
+    addCleanButton() {
+            var buttonBar = $('div.pull-right')[0];
+            var cleanButton = elmtify('<button type="button" class="btn btn-primary">Clean</button>');
+            var self = this;
+            cleanButton.onclick = function() {
+                self.markCleanupRows();
+                self.recursiveCleanup();
+            }
+
+            buttonBar.appendChild(cleanButton);
+        }
+        // Identifies which rows are empty and should be deleted
+    markCleanupRows() {
+            var rows = [];
+            $('.tc-row').toArray().forEach(row => {
+                var newObj = {
+                    name: $(row).find('.anchor-tag')[0].textContent,
+                    total: $(row).find('.total')[0].textContent.trim(),
+                    button: row.children[10].children[0]
+                };
+                newObj.button.id = newObj.name + 'btn';
+                rows.push(newObj);
+            });
+            rows = rows.filter(row => {
+                return row.total == 0;
+            })
+
+            console.debug('Rows to clean')
+            console.debug(rows);
+            this.cleanRows = rows;
+        }
+        // Triggers a delete for 1 row at a time until all rows have been removed
+    recursiveCleanup() {
+        if (this.cleanRows.length > 0) {
+            this.workingOn = this.cleanRows[0];
+            this.workingOn.button.click();
+            var popover = this.workingOn.button.nextSibling;
+            //console.debug(popover);
+            console.log('Removing: ' + this.workingOn.name);
+            $(popover).find('a')[2].click();
+            $('#confirmOk').click();
+            this.cleanRows.splice(0, 1);
+            this.previousRowId = this.workingOn.name + 'btn';
+            this.workingOn = null;
+            var self = this;
+            waitFor(this.delayTime, function() {
+                return $('#' + self.previousRowId).length == 0;
+            }, function() {
+                self.recursiveCleanup();
+            })
+        }
     }
     frameBasedChanges() {
-        this.addCommentViaCtrlEnter();
-        this.convertCommentLinks();
-    }
+            this.addCommentViaCtrlEnter();
+            this.convertCommentLinks();
+        }
+        // 1st method to be called to trigger everything
     initialize() {
-        this.addElements();
-        this.connectToUi();
-        this.monitorFrame();
+        var self = this;
+        var pageType = this.identifyPageType();
+        if (document.SnowModel.PageTypes.TimeCard == pageType) {
+            waitFor(this.delayTime, function() {
+                return $(document).find('div.pull-right').length > 0
+            }, function() {
+                self.addCleanButton();
+            });
+        } else {
+            this.addElements();
+            this.connectToUi();
+            this.monitorFrame();
+        }
     }
 }
 

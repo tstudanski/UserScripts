@@ -12,3 +12,4 @@
 3. Adds a `Vendor Suport Links` dropdown to the header for quick access to our vendor support sites
 4. URLs present in the activity notes are converted into links that create new tabs when clicked
 5. Posting activity can now be submitted via `Ctrl` + `Enter` instead of requiring a mouse click on the `Post` button
+6. Time Sheet Portal now has a button to remove time cards with a total of 0 time

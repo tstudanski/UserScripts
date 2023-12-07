@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.12.7.1
+// @version      2023.12.7.2
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -9,6 +9,7 @@
 // @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/WaitFor.js
 // @grant        none
 // ==/UserScript==
 
@@ -44,19 +45,6 @@ document.SnowModel = {
     PageTypes: {
         TimeCard: "TimeCard",
         Unknown: "Unknown"
-    }
-}
-
-// If testFunc returns true then runs callback, otherwise will test again after waitTime (in ms) has past
-// TODO pull this out into a utility file
-function waitFor(waitTime, testFunc, callback) {
-    if (testFunc()) {
-        callback();
-    } else {
-        console.log('Had to wait');
-        setTimeout(function() {
-            waitFor(waitTime, testFunc, callback);
-        }, waitTime);
     }
 }
 
@@ -283,11 +271,11 @@ class SnowModel {
             this.workingOn = null;
             var self = this;
             this.updateProgressBar(1 - (this.cleanRows.length / this.originalRowCount));
-            waitFor(this.delayTime, function() {
+            waitFor(function() {
                 return $('#' + self.previousRowId).length == 0;
             }, function() {
                 self.recursiveCleanup();
-            })
+            }, this.delayTime)
         }
     };
     updateProgressBar(percent) {
@@ -307,11 +295,11 @@ class SnowModel {
         var self = this;
         var pageType = this.identifyPageType();
         if (document.SnowModel.PageTypes.TimeCard == pageType) {
-            waitFor(this.delayTime, function() {
+            waitFor(function() {
                 return $(document).find('div.pull-right').length > 0
             }, function() {
                 self.addCleanButton();
-            });
+            }, this.delayTime);
         } else {
             this.addElements();
             this.connectToUi();

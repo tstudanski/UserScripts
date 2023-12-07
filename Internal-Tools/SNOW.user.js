@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.12.7.0
+// @version      2023.12.7.1
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -211,60 +211,64 @@ class SnowModel {
         newHtml += this.Constants.linkTemplate.replaceAll('@url', match[0]);
         newHtml += this.generateLinks(match.input.substring(match.index + match[0].length));
         return newHtml;
-    }
+    };
     convertCommentLinks() {
-            // Need to go into iframe 1st
-            if (this.frame == undefined) {
-                console.error('No iframe detected');
-                return;
-            }
-            var comments = Array.from(this.frame.getElementsByClassName('sn-widget-textblock-body'));
-            comments.forEach(comment => {
-                var newHtml = this.generateLinks(comment.innerHTML);
-                comment.innerHTML = newHtml;
-            });
+        // Need to go into iframe 1st
+        if (this.frame == undefined) {
+            console.error('No iframe detected');
+            return;
         }
-        // Identifies which type of page we are currently working with
+        var comments = Array.from(this.frame.getElementsByClassName('sn-widget-textblock-body'));
+        comments.forEach(comment => {
+            var newHtml = this.generateLinks(comment.innerHTML);
+            comment.innerHTML = newHtml;
+        });
+    };
+    // Identifies which type of page we are currently working with
     identifyPageType() {
-            if (window.location.href.indexOf('sysparm_timesheet_id') >= 0) {
-                return document.SnowModel.PageTypes.TimeCard;
-            } else {
-                return document.SnowModel.PageTypes.Unknown;
-            }
+        if (window.location.href.indexOf('sysparm_timesheet_id') >= 0) {
+            return document.SnowModel.PageTypes.TimeCard;
+        } else {
+            return document.SnowModel.PageTypes.Unknown;
         }
-        // Adds a Clean button to the UI
+    };
+    // Adds a Clean button to the UI
     addCleanButton() {
-            var buttonBar = $('div.pull-right')[0];
-            var cleanButton = elmtify('<button type="button" class="btn btn-primary">Clean</button>');
-            var self = this;
-            cleanButton.onclick = function() {
-                self.markCleanupRows();
-                self.recursiveCleanup();
-            }
-
-            buttonBar.appendChild(cleanButton);
+        var buttonBar = $('div.pull-right')[0];
+        var cleanButton = elmtify('<button type="button" class="btn btn-primary">Clean</button>');
+        var self = this;
+        cleanButton.onclick = function() {
+            self.markCleanupRows();
+            self.recursiveCleanup();
         }
-        // Identifies which rows are empty and should be deleted
+        buttonBar.appendChild(cleanButton);
+
+        var progressBar = elmtify('<div hidden class="progress" role="progressbar" aria-label="Clean up progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 0%"></div></div>');
+        this.progressBar = progressBar;
+        buttonBar.parentElement.appendChild(progressBar);
+    };
+    // Identifies which rows are empty and should be deleted
     markCleanupRows() {
-            var rows = [];
-            $('.tc-row').toArray().forEach(row => {
-                var newObj = {
-                    name: $(row).find('.anchor-tag')[0].textContent,
-                    total: $(row).find('.total')[0].textContent.trim(),
-                    button: row.children[10].children[0]
-                };
-                newObj.button.id = newObj.name + 'btn';
-                rows.push(newObj);
-            });
-            rows = rows.filter(row => {
-                return row.total == 0;
-            })
+        var rows = [];
+        $('.tc-row').toArray().forEach(row => {
+            var newObj = {
+                name: $(row).find('.anchor-tag')[0].textContent,
+                total: $(row).find('.total')[0].textContent.trim(),
+                button: row.children[10].children[0]
+            };
+            newObj.button.id = newObj.name + 'btn';
+            rows.push(newObj);
+        });
+        rows = rows.filter(row => {
+            return row.total == 0;
+        })
 
-            console.debug('Rows to clean')
-            console.debug(rows);
-            this.cleanRows = rows;
-        }
-        // Triggers a delete for 1 row at a time until all rows have been removed
+        console.debug('Rows to clean')
+        console.debug(rows);
+        this.cleanRows = rows;
+        this.originalRowCount = rows.length;
+    };
+    // Triggers a delete for 1 row at a time until all rows have been removed
     recursiveCleanup() {
         if (this.cleanRows.length > 0) {
             this.workingOn = this.cleanRows[0];
@@ -278,18 +282,27 @@ class SnowModel {
             this.previousRowId = this.workingOn.name + 'btn';
             this.workingOn = null;
             var self = this;
+            this.updateProgressBar(1 - (this.cleanRows.length / this.originalRowCount));
             waitFor(this.delayTime, function() {
                 return $('#' + self.previousRowId).length == 0;
             }, function() {
                 self.recursiveCleanup();
             })
         }
-    }
-    frameBasedChanges() {
-            this.addCommentViaCtrlEnter();
-            this.convertCommentLinks();
+    };
+    updateProgressBar(percent) {
+        this.progressBar.hidden = false;
+        var txt = (percent * 100) + '%';
+        this.progressBar.children[0].style.width = txt;
+        if (percent == 1) {
+            this.progressBar.hidden = true;
         }
-        // 1st method to be called to trigger everything
+    };
+    frameBasedChanges() {
+        this.addCommentViaCtrlEnter();
+        this.convertCommentLinks();
+    };
+    // 1st method to be called to trigger everything
     initialize() {
         var self = this;
         var pageType = this.identifyPageType();
@@ -304,7 +317,7 @@ class SnowModel {
             this.connectToUi();
             this.monitorFrame();
         }
-    }
+    };
 }
 
 window.onload = function() {

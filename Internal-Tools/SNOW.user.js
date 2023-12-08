@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.12.7.2
+// @version      2023.12.8.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -214,7 +214,8 @@ class SnowModel {
     };
     // Identifies which type of page we are currently working with
     identifyPageType() {
-        if (window.location.href.indexOf('sysparm_timesheet_id') >= 0) {
+        // Pretty sure TCP stands for Time Card Portal
+        if (window.location.href.indexOf('tcp') >= 0) {
             return document.SnowModel.PageTypes.TimeCard;
         } else {
             return document.SnowModel.PageTypes.Unknown;

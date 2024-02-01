@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E1 Time Keeping
 // @namespace    https://github.com/tstudanski/
-// @version      2023.10.24.1
+// @version      2024.2.1.0
 // @description  Simplifying time weekly entry
 // @author       Tyler Studanski
 // @match        https://myinfo.mspairport.com/jde/E1Menu.maf
@@ -9,12 +9,25 @@
 // @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/E1-TimeKeeping.user.js
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/E1-TimeKeeping.user.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/ChangeModule.js
 // @grant        none
 // ==/UserScript==
 
 'use strict';
 class E1TimeKeeping {
-    constructor() {}
+    constructor() {
+        this.monitor = new OnChangeModule(500, function(){
+            return document.getElementById('e1menuAppIframe').contentDocument;
+        })
+        var self = this;
+        this.monitor.onChange = function() {
+            console.debug('frame changed');
+            if (self.isTimeEntry()) {
+                console.debug("Found time entry");
+                self.convertToButtons();
+            }
+        }
+    }
     updateField(field, value) {
         field.value = value;
         field.dispatchEvent(new Event('change', { 'bubbles': true }));
@@ -56,9 +69,16 @@ class E1TimeKeeping {
         console.log(buttonList);
     }
     setup() {
+        this.updateFrameHandles();
+        this.convertToButtons();
+    }
+    updateFrameHandles() {
         this.frame = document.getElementById('e1menuAppIframe').contentWindow.document;
         this.dataTable = $(this.frame).find('.dataGrid')[0];
-        this.convertToButtons();
+    }
+    isTimeEntry() {
+        this.updateFrameHandles();
+        return $(this.frame).find('[title="Week Start Dates"]')[1] != undefined;
     }
     addButtonToHeader() {
         var menu = document.getElementById('menuContainer');
@@ -77,5 +97,5 @@ class E1TimeKeeping {
 
 window.onload = function() {
     document.timeKeeping = new E1TimeKeeping();
-    document.timeKeeping.initialize();
+    //document.timeKeeping.initialize();
 }

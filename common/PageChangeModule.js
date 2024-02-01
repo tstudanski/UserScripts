@@ -1,23 +1,13 @@
 /// Plugin for single page sites to track when the address bar changes
-// Inspired by https://stackoverflow.com/a/1930942/3416155
-class PageChangeModule {
+/// Depends on ChangeModule
+/// Inspired by https://stackoverflow.com/a/1930942/3416155
+class PageChangeModule extends OnChangeModule {
     constructor(frequency) {
-        this.oldLocation = location.href;
-        if (frequency == null) {
-            frequency = 1000;
-        }
-        var self = this;
-        setInterval(function() {
-            self.checkPage();
-        }, frequency);
+        super(frequency, function() {
+            return location.href;
+        })
     }
     onChange() {
         console.log('Location changed.  Feel free to override this with the action you want to happen.');
-    }
-    checkPage() {
-        if (location.href != this.oldLocation) {
-            this.oldLocation = location.href;
-            this.onChange();
-        }
     }
 }

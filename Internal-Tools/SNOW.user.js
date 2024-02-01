@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2023.12.8.0
+// @version      2024.2.1.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -10,6 +10,7 @@
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/WaitFor.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/PageChangeModule.js
 // @grant        none
 // ==/UserScript==
 
@@ -53,6 +54,12 @@ class SnowModel {
         this.frame = null;
         this.workingOn = null;
         this.delayTime = 100; // in milliseconds
+        this.pageModule = new PageChangeModule(500);
+        var self = this;
+        this.pageModule.onChange = function() {
+            console.debug('Page change happened----------------------');
+            self.initialize();
+        }
     }
     venderSites = [
         { name: 'August Ash', url: 'https://changes.augustash.com/hc/en-us' },
@@ -114,16 +121,23 @@ class SnowModel {
             console.error('Expected header is not present.  Not adding elements.');
             return;
         }
-        var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
-        var button = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
-        var globalTable = elmtify('<input class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
-        var vendorDropdown = elmtify('<div class="dropdown"><a class="btn btn-primary nav-item dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">Vendor Support Links</a><div id="vendorLinks" class="dropdown-menu"></div></div>');
-
-        header.appendChild(input);
-        header.appendChild(button);
-        header.appendChild(globalTable);
-        header.appendChild(vendorDropdown);
-        this.addVendors();
+        if (!document.getElementById('gSearch')) {
+            var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
+            header.appendChild(input);
+        }
+        if (!document.getElementById('gsButton')) {
+            var button = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
+            header.appendChild(button);
+        }
+        if (!document.getElementById('gTable')) {
+            var globalTable = elmtify('<input id="gTable" class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
+            header.appendChild(globalTable);
+        }
+        if (!document.getElementById('vDropdown')) {
+            var vendorDropdown = elmtify('<div id="vDropdown" class="dropdown"><a class="btn btn-primary nav-item dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">Vendor Support Links</a><div id="vendorLinks" class="dropdown-menu"></div></div>');
+            header.appendChild(vendorDropdown);
+            this.addVendors();
+        }
     }
     findTag(text) {
         var tag = null;
@@ -224,7 +238,7 @@ class SnowModel {
     // Adds a Clean button to the UI
     addCleanButton() {
         var buttonBar = $('div.pull-right')[0];
-        var cleanButton = elmtify('<button type="button" class="btn btn-primary">Clean</button>');
+        var cleanButton = elmtify('<button id="cleanbtn" type="button" class="btn btn-primary">Clean</button>');
         var self = this;
         cleanButton.onclick = function() {
             self.markCleanupRows();
@@ -232,7 +246,7 @@ class SnowModel {
         }
         buttonBar.appendChild(cleanButton);
 
-        var progressBar = elmtify('<div hidden class="progress" role="progressbar" aria-label="Clean up progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 0%"></div></div>');
+        var progressBar = elmtify('<div id="progressbar" hidden class="progress" role="progressbar" aria-label="Clean up progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 0%"></div></div>');
         this.progressBar = progressBar;
         buttonBar.parentElement.appendChild(progressBar);
     };
@@ -297,7 +311,7 @@ class SnowModel {
         var pageType = this.identifyPageType();
         if (document.SnowModel.PageTypes.TimeCard == pageType) {
             waitFor(function() {
-                return $(document).find('div.pull-right').length > 0
+                return $(document).find('div.pull-right').length > 0 && $(document).find('.loader').length == 0;
             }, function() {
                 self.addCleanButton();
             }, this.delayTime);

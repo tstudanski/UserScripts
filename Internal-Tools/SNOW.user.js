@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2024.2.1.0
+// @version      2024.2.1.1
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -10,6 +10,7 @@
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/WaitFor.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/ChangeModule.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/PageChangeModule.js
 // @grant        none
 // ==/UserScript==

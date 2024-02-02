@@ -7,7 +7,7 @@ class PageChangeModule extends OnChangeModule {
             return location.href;
         })
     }
-    onChange() {
-        console.log('Location changed.  Feel free to override this with the action you want to happen.');
+    onChange(oldValue, newValue) {
+        console.log('Location changed from ' + oldValue + ' to ' + newValue + '.  Feel free to override this with the action you want to happen.');
     }
 }

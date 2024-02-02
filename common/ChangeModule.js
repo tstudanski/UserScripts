@@ -12,14 +12,15 @@ class OnChangeModule {
             self.checkValue();
         }, frequency);
     }
-    onChange() {
-        console.log('Value changed.  Feel free to override this with the action you want to happen.');
+    onChange(oldValue, newValue) {
+        console.log('Value changed from ' + oldValue + ' to ' + newValue + '.  Override onChange() with the action you want to happen.');
     }
     checkValue() {
         var currentValue = this.getValueFunction();
         if (this.oldValue != currentValue) {
+            var previousValue = this.oldValue;
             this.oldValue = currentValue;
-            this.onChange();
+            this.onChange(previousValue, currentValue);
         }
     }
 }

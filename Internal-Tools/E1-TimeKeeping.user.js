@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E1 Time Keeping
 // @namespace    https://github.com/tstudanski/
-// @version      2024.2.1.0
+// @version      2024.2.26.0
 // @description  Simplifying time weekly entry
 // @author       Tyler Studanski
 // @match        https://myinfo.mspairport.com/jde/E1Menu.maf
@@ -15,17 +15,24 @@
 
 'use strict';
 class E1TimeKeeping {
+    env = 'prod'
     constructor() {
         this.monitor = new OnChangeModule(500, function(){
             return document.getElementById('e1menuAppIframe').contentDocument;
         })
         var self = this;
         this.monitor.onChange = function() {
-            console.debug('frame changed');
+            self.debug('frame changed');
             if (self.isTimeEntry()) {
-                console.debug("Found time entry");
+                self.debug("Found time entry");
                 self.convertToButtons();
             }
+        }
+        this.monitor.onChange();
+    }
+    debug(data) {
+        if ('prod' != this.env) {
+            console.log(data);
         }
     }
     updateField(field, value) {
@@ -37,8 +44,9 @@ class E1TimeKeeping {
         var latestLine = $(self.frame).find('.editableModifier');
         // Insert date
         self.updateField($(latestLine[1]).find('input')[0], date);
-        // Set to Regular pay
-        self.updateField($(latestLine[2]).find('input')[0], 1);
+        // Set to selected pay type
+        var payType = $(self.frame).find("input[type='radio'][name='payType']:checked").val();
+        self.updateField($(latestLine[2]).find('input')[0], payType);
         // Fill in Week
         for (var i = 6; i < 11; i++) {
             self.updateField($(latestLine[i]).find('input')[0], 8);
@@ -47,9 +55,15 @@ class E1TimeKeeping {
         // Select next row
         var nonEntries = $(self.frame).find('.textModifier');
         nonEntries[nonEntries.length - 19].click();
-        console.debug('Added: ' + date);
+        this.debug('Added: ' + date);
     }
     convertToButtons() {
+        this.debug('Adding buttons');
+        this.changeDatesToButtons();
+        this.changePayTypeToRadio();
+    }
+    changeDatesToButtons() {
+        this.debug('Converting dates to buttons');
         var buttonList = [];
         var firstDate = $(this.frame).find('[title="Week Start Dates"]')[1];
         if (firstDate == undefined) {
@@ -66,13 +80,33 @@ class E1TimeKeeping {
                 self.inputDate(button, self);
             }
         });
-        console.log(buttonList);
+        this.debug(buttonList);
+    }
+    changePayTypeToRadio() {
+        this.debug('Adding radio buttons');
+        var payTypeDiv = $(this.frame).find('#div0_639');
+        var labels = payTypeDiv.find('div.WebLabel').toArray();
+
+        labels.forEach(label => {
+            var radioButton = elmtify('<input type="radio" name="payType" value="HTML">');
+            radioButton.value = label.title.match(/^[0-9]+/)[0];
+            label.prepend(radioButton);
+            // Add click event to select the radio
+            label.onclick = function() {
+                this.children[0].click();
+            }
+            this.debug('Adding radio button for: ' + radioButton.value);
+        });
+
+        // Start with Regular selected
+        payTypeDiv.find('input[name="payType"][value="1"]').click();
     }
     setup() {
         this.updateFrameHandles();
         this.convertToButtons();
     }
     updateFrameHandles() {
+        this.debug('Updating frame reference');
         this.frame = document.getElementById('e1menuAppIframe').contentWindow.document;
         this.dataTable = $(this.frame).find('.dataGrid')[0];
     }

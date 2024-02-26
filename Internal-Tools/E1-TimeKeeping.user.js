@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         E1 Time Keeping
 // @namespace    https://github.com/tstudanski/
-// @version      2024.2.26.0
+// @version      2024.2.26.1
 // @description  Simplifying time weekly entry
 // @author       Tyler Studanski
 // @match        https://myinfo.mspairport.com/jde/E1Menu.maf
@@ -101,10 +101,6 @@ class E1TimeKeeping {
         // Start with Regular selected
         payTypeDiv.find('input[name="payType"][value="1"]').click();
     }
-    setup() {
-        this.updateFrameHandles();
-        this.convertToButtons();
-    }
     updateFrameHandles() {
         this.debug('Updating frame reference');
         this.frame = document.getElementById('e1menuAppIframe').contentWindow.document;
@@ -114,22 +110,8 @@ class E1TimeKeeping {
         this.updateFrameHandles();
         return $(this.frame).find('[title="Week Start Dates"]')[1] != undefined;
     }
-    addButtonToHeader() {
-        var menu = document.getElementById('menuContainer');
-        var activateButton = elmtify('<div id="e1TimeKeeping" class="e1MenuBarItem" aria-describedby="Custom UserScript enhancements" title="Custom UserScript enhancements">' +
-            '<img border="0" src="/jde/share/images/alta/mainmenu/personalize.png" /></div>');
-        var self = this;
-        activateButton.onclick = function() {
-            self.setup();
-        }
-        menu.append(activateButton);
-    }
-    initialize() {
-        this.addButtonToHeader();
-    }
 }
 
 window.onload = function() {
     document.timeKeeping = new E1TimeKeeping();
-    //document.timeKeeping.initialize();
 }

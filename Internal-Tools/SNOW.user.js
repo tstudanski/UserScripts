@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2024.2.1.1
+// @version      2024.3.1.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -51,6 +51,7 @@ document.SnowModel = {
 }
 
 class SnowModel {
+    env = 'prod'
     constructor() {
         this.frame = null;
         this.workingOn = null;
@@ -58,7 +59,7 @@ class SnowModel {
         this.pageModule = new PageChangeModule(500);
         var self = this;
         this.pageModule.onChange = function() {
-            console.debug('Page change happened----------------------');
+            self.debug('Page change happened----------------------');
             self.initialize();
         }
     }
@@ -72,6 +73,11 @@ class SnowModel {
         linkTemplate: '<a href="@url" target="_blank">@url</a>',
         frameCheck: 200 // time between iframe change check in ms
     }
+    debug(...data) {
+        if (this.env != 'prod') {
+            console.log(data);
+        }
+    }
     updateFrame() {
         var mainFrame = document.getElementById('gsft_main');
         if (mainFrame == undefined) {
@@ -80,9 +86,10 @@ class SnowModel {
             this.frame = mainFrame.contentWindow.document;
         }
         this.frameBasedChanges();
-    };
+    }
     // based on code found here: https://stackoverflow.com/a/20156615/3416155
     monitorFrame() {
+        // TODO update with new shadow DOM
         // Check for changes
         var self = this;
         var frame = window.document.children[0].getElementsByTagName('iframe')[0];
@@ -90,22 +97,21 @@ class SnowModel {
             var observer = new MutationObserver(function(e) {
                 if (e[0].removedNodes) {
                     // update if different
-                    console.debug('iframe changed');
+                    self.debug('iframe changed');
                     self.updateFrame();
                 }
             });
             observer.observe(frame, { attributes: true });
         } else {
-            console.debug('frame not loaded yet');
+            this.debug('frame not loaded yet');
             setTimeout(function() {
                 self.monitorFrame();
             }, self.Constants.frameCheck);
         }
     }
-    addVendors() {
+    addVendors(menu) {
         var template = elmtify('<div class="col-auto"><img src="" /> <a class="dropdown-item" target="_blank" href="#">Action</a></div>');
         var iconBase = 'https://www.google.com/s2/favicons?sz=16&domain=';
-        var menu = document.getElementById('vendorLinks');
         this.venderSites.forEach(vendor => {
             var item = template.cloneNode(true);
             var link = item.getElementsByClassName('dropdown-item')[0];
@@ -117,28 +123,79 @@ class SnowModel {
         });
     }
     addElements() {
-        var header = document.getElementsByClassName('navbar-header')[0];
-        if (header == undefined) {
+        var header = this.findHeader();
+        if (!header) {
             console.error('Expected header is not present.  Not adding elements.');
             return;
         }
-        if (!document.getElementById('gSearch')) {
-            var input = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
-            header.appendChild(input);
+        var buttonsObj = this.createSearchButtons(header.className.indexOf('navbar-header') == -1);
+        if (buttonsObj.gSearch && !header.querySelector('#gSearch')) {
+            header.appendChild(buttonsObj.gSearch);
         }
-        if (!document.getElementById('gsButton')) {
-            var button = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
-            header.appendChild(button);
+        if (buttonsObj.gsButton && !header.querySelector('#gsButton')) {
+            header.appendChild(buttonsObj.gsButton);
         }
-        if (!document.getElementById('gTable')) {
-            var globalTable = elmtify('<input id="gTable" class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
-            header.appendChild(globalTable);
+        if (buttonsObj.gTable && !header.querySelector('#gTable')) {
+            header.appendChild(buttonsObj.gTable);
         }
-        if (!document.getElementById('vDropdown')) {
-            var vendorDropdown = elmtify('<div id="vDropdown" class="dropdown"><a class="btn btn-primary nav-item dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">Vendor Support Links</a><div id="vendorLinks" class="dropdown-menu"></div></div>');
-            header.appendChild(vendorDropdown);
-            this.addVendors();
+        if (buttonsObj.vDropdown && !header.querySelector('#vDropdown')) {
+            header.appendChild(buttonsObj.vDropdown);
+            var vendorLinks = buttonsObj.vDropdown.querySelector('#vendorLinks');
+            this.addVendors(vendorLinks);
         }
+    }
+    findHeader() {
+        var header = document.getElementsByClassName('navbar-header')[0];
+        if (!header) {
+            // Attempt to find shadowDOM header
+            var searchFor = '.sn-polaris-navigation.polaris-header-menu';
+            header = this.recursiveShadowSearch(document, searchFor);
+        }
+        if (!header) {
+            console.error('Could not find header');
+            return;
+        }
+        return header;
+    }
+    recursiveShadowSearch(currentRoot, selectorString) {
+        var result = currentRoot.querySelector(selectorString);
+        this.debug(result);
+        if (!result) {
+            var possibleShadows = currentRoot.querySelectorAll('[component-id]');
+            this.debug(possibleShadows);
+            if (possibleShadows.length > 0) {
+                var found = false;
+                var self = this;
+                for (var i = 0; i < possibleShadows.length; i++) {
+                    if (found) {
+                        break;
+                    }
+                    found = self.recursiveShadowSearch(possibleShadows[i].shadowRoot, selectorString);
+                }
+                if (found) {
+                    return found;
+                }
+            }
+            this.debug('Could not find anymore shadows');
+        } else {
+            return result;
+        }
+
+        console.error('Couldn\'t find element');
+    }
+    createSearchButtons(isInShadow) {
+        var result = {};
+        if (isInShadow) {
+            result.vDropdown = elmtify('<div id="vDropdown" class="dropdown" style="position: absolute;margin-inline-end: 0px;left: 415px;"><input type="button" class="dropdown-toggle" value="Vendor Support Links" onclick="this.nextSibling.hidden = !this.nextSibling.hidden;" /><div id="vendorLinks" class="dropdown-menu" hidden></div></div>');
+
+        } else {
+            result.gSearch = elmtify('<input id="gSearch" class="me-2 nav-item" type="search" placeholder="Global Search" aria-label="Global Search">');
+            result.gsButton = elmtify('<input id="gsButton" class="btn btn-primary nav-item" type="submit">Search</input>');
+            result.gTable = elmtify('<input id="gTable" class="btn btn-primary nav-item" type="button" onclick="location.href=\'https://mac.service-now.com/nav_to.do?uri=%2Ftask_list.do%3F\';" value="Go To Global Search Table" />');
+            result.vDropdown = elmtify('<div id="vDropdown" class="dropdown"><a class="btn btn-primary nav-item dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-expanded="false">Vendor Support Links</a><div id="vendorLinks" class="dropdown-menu"></div></div>');
+        }
+
+        return result;
     }
     findTag(text) {
         var tag = null;
@@ -157,11 +214,11 @@ class SnowModel {
     }
     search() {
         var text = document.getElementById('gSearch').value.trim();
-        console.debug('Attempted to search: ' + text);
+        this.debug('Attempted to search: ' + text);
         var tag = document.snowModel.findTag(text);
 
         if (tag != null) {
-            console.debug('Generated search URL: ' + tag.url);
+            this.debug('Generated search URL: ' + tag.url);
             window.location.href = tag.url;
         }
     }
@@ -209,12 +266,12 @@ class SnowModel {
         if (!match) {
             return remainingText;
         }
-        console.debug('Found URL: ' + match[0]);
+        this.debug('Found URL: ' + match[0]);
         var newHtml = match.input.substring(0, match.index);
         newHtml += this.Constants.linkTemplate.replaceAll('@url', match[0]);
         newHtml += this.generateLinks(match.input.substring(match.index + match[0].length));
         return newHtml;
-    };
+    }
     convertCommentLinks() {
         // Need to go into iframe 1st
         if (this.frame == undefined) {
@@ -226,7 +283,7 @@ class SnowModel {
             var newHtml = this.generateLinks(comment.innerHTML);
             comment.innerHTML = newHtml;
         });
-    };
+    }
     // Identifies which type of page we are currently working with
     identifyPageType() {
         // Pretty sure TCP stands for Time Card Portal
@@ -235,7 +292,7 @@ class SnowModel {
         } else {
             return document.SnowModel.PageTypes.Unknown;
         }
-    };
+    }
     // Adds a Clean button to the UI
     addCleanButton() {
         var buttonBar = $('div.pull-right')[0];
@@ -250,7 +307,7 @@ class SnowModel {
         var progressBar = elmtify('<div id="progressbar" hidden class="progress" role="progressbar" aria-label="Clean up progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 0%"></div></div>');
         this.progressBar = progressBar;
         buttonBar.parentElement.appendChild(progressBar);
-    };
+    }
     // Identifies which rows are empty and should be deleted
     markCleanupRows() {
         var rows = [];
@@ -267,18 +324,17 @@ class SnowModel {
             return row.total == 0;
         })
 
-        console.debug('Rows to clean')
-        console.debug(rows);
+        this.debug('Rows to clean')
+        this.debug(rows);
         this.cleanRows = rows;
         this.originalRowCount = rows.length;
-    };
+    }
     // Triggers a delete for 1 row at a time until all rows have been removed
     recursiveCleanup() {
         if (this.cleanRows.length > 0) {
             this.workingOn = this.cleanRows[0];
             this.workingOn.button.click();
             var popover = this.workingOn.button.nextSibling;
-            //console.debug(popover);
             console.log('Removing: ' + this.workingOn.name);
             $(popover).find('a')[2].click();
             $('#confirmOk').click();
@@ -293,7 +349,7 @@ class SnowModel {
                 self.recursiveCleanup();
             }, this.delayTime)
         }
-    };
+    }
     updateProgressBar(percent) {
         this.progressBar.hidden = false;
         var txt = (percent * 100) + '%';
@@ -301,11 +357,19 @@ class SnowModel {
         if (percent == 1) {
             this.progressBar.hidden = true;
         }
-    };
+    }
     frameBasedChanges() {
         this.addCommentViaCtrlEnter();
         this.convertCommentLinks();
-    };
+    }
+    isShadowDomPresent() {
+        var possibleShadow = $('[component-id]');
+        if (possibleShadow) {
+            this.shadowRoot = possibleShadow.shadowRoot;
+            return true;
+        }
+        return false;
+    }
     // 1st method to be called to trigger everything
     initialize() {
         var self = this;
@@ -321,10 +385,14 @@ class SnowModel {
             this.connectToUi();
             this.monitorFrame();
         }
-    };
+    }
 }
 
 window.onload = function() {
     document.snowModel = new SnowModel();
-    document.snowModel.initialize();
+    console.log('model created');
+    setTimeout(function(){
+        console.log('model initializing');
+        document.snowModel.initialize();
+    }, 1000);
 }

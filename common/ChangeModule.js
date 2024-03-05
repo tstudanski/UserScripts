@@ -17,6 +17,10 @@ class OnChangeModule {
         this.oldValue = getValueFunction();
         if (onChange) {
             this.onChange = onChange;
+        } else {
+            this.onChange = function(oldValue, newValue) {
+                console.log('Value changed from ' + oldValue + ' to ' + newValue + '.  Override onChange() with the action you want to happen.');
+            }
         }
         if (frequency == null) {
             frequency = 1000;
@@ -25,9 +29,6 @@ class OnChangeModule {
         setInterval(function() {
             self.checkValue();
         }, frequency);
-    }
-    onChange(oldValue, newValue) {
-        console.log('Value changed from ' + oldValue + ' to ' + newValue + '.  Override onChange() with the action you want to happen.');
     }
     checkValue() {
         var currentValue = this.getValueFunction();

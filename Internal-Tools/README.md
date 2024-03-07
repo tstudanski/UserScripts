@@ -6,6 +6,8 @@
     3. Click on the `Week Start Date` you want to auto populate with 40 hours of regular pay on the next line
 ## LMS-Training.user.js
 1. Resizes the training popup to the size of the training window to prevent manual resizing for each training module.
+## PwSafe.user.js
+1. Adds a `Quick Password` button to the left side menu.  Using this button will automatically take you to your change password for retrieval.
 ## SNOW.user.js
 1. Adds a `Global Search` to the page header that can handle any Service Now ticket type
 2. Adds a `Go To Global Search Table` button to the header which takes the user to a filterable table that can search any ticket type

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Password Safe Beyond Insight
 // @namespace    https://github.com/tstudanski/
-// @version      2024.3.7.1
+// @version      2024.3.7.2
 // @description  Shortcuts for using this password management tool
 // @author       Tyler Studanski
 // @match        https://pwsafe.mac.msp.airport/webconsole/*
@@ -22,7 +22,11 @@ class PwSafeModel extends BaseModel {
         this.debug('Generated Model');
         var self = this;
         if (!this.onPage('dashboard')) {
-            document.querySelector('ae-icon[data-icon-name="menu_home"]').click();
+            waitFor(function() {
+                return document.querySelector('ae-icon[data-icon-name="menu_home"]');
+            }, function() {
+                document.querySelector('ae-icon[data-icon-name="menu_home"]').click();
+            })
         }
         waitFor(function() {
             return document.querySelectorAll('.flex-y.ae-card.card-link').length > 0;
@@ -70,14 +74,19 @@ class PwSafeModel extends BaseModel {
             // Go to passwords
             document.querySelector('ae-icon[data-icon-name="menu_passwordsafe"]').click();
         }
-
+        var self = this;
         // Go into iframe
         waitFor(function() {
             return document.querySelector('iframe#passwordsafeIframe');
         }, function() {
             var frame = document.querySelector('iframe#passwordsafeIframe').contentWindow.document;
-            // Select 1st lightning bolt // TODO Change this to make sure it matches the logged in user account
-            frame.querySelectorAll('.icon-action.onecl')[0].click();
+            if (!self.mostChg) {
+                self.mostChg = self.findChangeName(frame);
+            }
+            self.debug(self.mostChg);
+            
+            // Select most common chg account lightning bolt // TODO Change this to make sure it matches the logged in user account
+            self.mostChg.row.querySelector('.icon-action.onecl').click();
             
             // Retrieve Password
             waitFor(function() {
@@ -86,10 +95,34 @@ class PwSafeModel extends BaseModel {
                 frame.querySelector('.btn-retrieve-password-ql').click();
             })
         })
-        
     }
     onPage(expectedEnding) {
         return document.location.href.indexOf(expectedEnding) != -1;
+    }
+    findChangeName(frame) {
+        var nameMap = {};
+        var favAccounts = frame.querySelectorAll('tr.k-master-row');
+        for (var i = 0; i < favAccounts.length; i++) {
+            var account = favAccounts[i].children[8].textContent;
+            if (account.indexOf('chg.') != -1) {
+                if (!nameMap[account]) {
+                    nameMap[account] = {
+                        name: account,
+                        count: 0,
+                        row: favAccounts[i]
+                    };
+                }
+                nameMap[account].count++;
+            }
+        }
+        this.debug(nameMap);
+        var most = null;
+        for (var name in nameMap) {
+            if (most == null || nameMap[name].count > most.count) {
+                most = nameMap[name];
+            }
+        }
+        return most;
     }
 }
 

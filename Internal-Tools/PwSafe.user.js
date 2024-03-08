@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Password Safe Beyond Insight
 // @namespace    https://github.com/tstudanski/
-// @version      2024.3.7.2
+// @version      2024.3.8.0
 // @description  Shortcuts for using this password management tool
 // @author       Tyler Studanski
 // @match        https://pwsafe.mac.msp.airport/webconsole/*
@@ -29,7 +29,7 @@ class PwSafeModel extends BaseModel {
             })
         }
         waitFor(function() {
-            return document.querySelectorAll('.flex-y.ae-card.card-link').length > 0;
+            return document.querySelectorAll('.flex-y.ae-card.card-link').length > 0 && document.querySelectorAll('ul[role="listbox"]').length > 0;
         }, function() {
             self.addQuickPasswordButton()
         });
@@ -46,10 +46,7 @@ class PwSafeModel extends BaseModel {
         }
         var quickButton = elmtify('<div id="qButtonMin">' + this.lightningSvg + '</div>');
         
-        var self = this;
-        quickButton.onclick = function() {
-            self.jumpToPassword();
-        }
+        this.makeButtonInteractive(quickButton);
         miniMenu.appendChild(quickButton);
 
         quickButton = maxMenu.children[0].cloneNode(true);
@@ -63,10 +60,22 @@ class PwSafeModel extends BaseModel {
         aeIcon.appendChild(elmtify(this.lightningSvg));
         quickButton.querySelector('ae-translate').textContent = 'Quick Password';
         
-        quickButton.onclick = function() {
+        this.makeButtonInteractive(quickButton);
+        maxMenu.appendChild(quickButton);
+    }
+    makeButtonInteractive(button) {
+        var self = this;
+        button.onclick = function() {
             self.jumpToPassword();
         }
-        maxMenu.appendChild(quickButton);
+        button.addEventListener('mouseover', function() {
+            var svg = button.querySelector('svg');
+            svg.style.color = 'orange';
+        });
+        button.addEventListener('mouseleave', function() {
+            var svg = button.querySelector('svg');
+            svg.style.color = 'yellow';
+        });
     }
     jumpToPassword() {
         this.debug('Jumping to change password');

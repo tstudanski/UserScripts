@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Password Safe Beyond Insight
 // @namespace    https://github.com/tstudanski/
-// @version      2024.3.8.0
+// @version      2024.3.8.1
 // @description  Shortcuts for using this password management tool
 // @author       Tyler Studanski
 // @match        https://pwsafe.mac.msp.airport/webconsole/*
@@ -86,7 +86,11 @@ class PwSafeModel extends BaseModel {
         var self = this;
         // Go into iframe
         waitFor(function() {
-            return document.querySelector('iframe#passwordsafeIframe');
+            var frameEle = document.querySelector('iframe#passwordsafeIframe');
+            if (!frameEle) {
+                return false;
+            }
+            return frameEle.contentWindow.document.querySelectorAll('tr.k-master-row').length > 0;
         }, function() {
             var frame = document.querySelector('iframe#passwordsafeIframe').contentWindow.document;
             if (!self.mostChg) {

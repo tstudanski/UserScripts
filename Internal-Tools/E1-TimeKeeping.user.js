@@ -1,22 +1,23 @@
 // ==UserScript==
 // @name         E1 Time Keeping
 // @namespace    https://github.com/tstudanski/
-// @version      2024.2.26.1
+// @version      2024.3.8.0
 // @description  Simplifying time weekly entry
 // @author       Tyler Studanski
 // @match        https://myinfo.mspairport.com/jde/E1Menu.maf
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mspairport.com
 // @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/E1-TimeKeeping.user.js
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/E1-TimeKeeping.user.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/BaseModel.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/ChangeModule.js
 // @grant        none
 // ==/UserScript==
 
 'use strict';
-class E1TimeKeeping {
-    env = 'prod'
+class E1TimeKeeping extends BaseModel {
     constructor() {
+        super();
         this.monitor = new OnChangeModule(500, function(){
             return document.getElementById('e1menuAppIframe').contentDocument;
         })
@@ -29,11 +30,6 @@ class E1TimeKeeping {
             }
         }
         this.monitor.onChange();
-    }
-    debug(data) {
-        if ('prod' != this.env) {
-            console.log(data);
-        }
     }
     updateField(field, value) {
         field.value = value;

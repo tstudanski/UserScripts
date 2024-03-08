@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2024.3.1.0
+// @version      2024.3.8.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=service-now.com
 // @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/SNOW.user.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/BaseModel.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/WaitFor.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/ChangeModule.js
@@ -50,9 +51,9 @@ document.SnowModel = {
     }
 }
 
-class SnowModel {
-    env = 'prod'
+class SnowModel extends BaseModel {
     constructor() {
+        super();
         this.frame = null;
         this.workingOn = null;
         this.delayTime = 100; // in milliseconds
@@ -72,11 +73,6 @@ class SnowModel {
         urlRegex: /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/,
         linkTemplate: '<a href="@url" target="_blank">@url</a>',
         frameCheck: 200 // time between iframe change check in ms
-    }
-    debug(...data) {
-        if (this.env != 'prod') {
-            console.log(data);
-        }
     }
     updateFrame() {
         var mainFrame = document.getElementById('gsft_main');

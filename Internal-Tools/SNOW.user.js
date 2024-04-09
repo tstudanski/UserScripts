@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2024.3.8.0
+// @version      2024.4.9.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -46,8 +46,26 @@ document.SnowModel = {
         }
     },
     PageTypes: {
-        TimeCard: "TimeCard",
-        Unknown: "Unknown"
+        Change: {name:'Change',search:'change_request.do'},
+        Dashboard: {name:'Dashboard',search:'dashboard.do'},
+        Incident: {name:'Incident',search:'incident.do'},
+        Problem: {name:'Problem',search:'problem.do'},
+        RequestItem: {name:'RequestItem',search:'req_item.do'},
+        TimeCard: {name:'TimeCard',search:'tcp'},
+        Unknown: {name:'Unknown',search:'.'},
+        values: function() {
+            return [this.Change, this.Dashboard, this.Incident, this.Problem, this.RequestItem,
+            this.TimeCard, this.Unknown];
+        },
+        findType: function() {
+            var cUrl = window.location.href;
+            var values = this.values();
+            for (var i = 0; i < values.length; i++) {
+                if (cUrl.indexOf(values[i].search) >= 0) {
+                    return values[i];
+                }
+            }
+        }
     }
 }
 
@@ -76,34 +94,15 @@ class SnowModel extends BaseModel {
     }
     updateFrame() {
         var mainFrame = document.getElementById('gsft_main');
-        if (mainFrame == undefined) {
+        if (!mainFrame) {
+            mainFrame = this.recursiveShadowSearch(document, '#gsft_main');
+        }
+        if (!mainFrame) {
             console.error('Could not find main iframe');
         } else {
             this.frame = mainFrame.contentWindow.document;
         }
         this.frameBasedChanges();
-    }
-    // based on code found here: https://stackoverflow.com/a/20156615/3416155
-    monitorFrame() {
-        // TODO update with new shadow DOM
-        // Check for changes
-        var self = this;
-        var frame = window.document.children[0].getElementsByTagName('iframe')[0];
-        if (frame != null) {
-            var observer = new MutationObserver(function(e) {
-                if (e[0].removedNodes) {
-                    // update if different
-                    self.debug('iframe changed');
-                    self.updateFrame();
-                }
-            });
-            observer.observe(frame, { attributes: true });
-        } else {
-            this.debug('frame not loaded yet');
-            setTimeout(function() {
-                self.monitorFrame();
-            }, self.Constants.frameCheck);
-        }
     }
     addVendors(menu) {
         var template = elmtify('<div class="col-auto"><img src="" /> <a class="dropdown-item" target="_blank" href="#">Action</a></div>');
@@ -124,15 +123,18 @@ class SnowModel extends BaseModel {
             console.error('Expected header is not present.  Not adding elements.');
             return;
         }
+        var globalAlreadyExists = this.recursiveShadowSearch(document,'.sn-global-typeahead-input') != undefined;
         var buttonsObj = this.createSearchButtons(header.className.indexOf('navbar-header') == -1);
-        if (buttonsObj.gSearch && !header.querySelector('#gSearch')) {
-            header.appendChild(buttonsObj.gSearch);
-        }
-        if (buttonsObj.gsButton && !header.querySelector('#gsButton')) {
-            header.appendChild(buttonsObj.gsButton);
-        }
-        if (buttonsObj.gTable && !header.querySelector('#gTable')) {
-            header.appendChild(buttonsObj.gTable);
+        if (!globalAlreadyExists) {
+            if (buttonsObj.gSearch && !header.querySelector('#gSearch')) {
+                header.appendChild(buttonsObj.gSearch);
+            }
+            if (buttonsObj.gsButton && !header.querySelector('#gsButton')) {
+                header.appendChild(buttonsObj.gsButton);
+            }
+            if (buttonsObj.gTable && !header.querySelector('#gTable')) {
+                header.appendChild(buttonsObj.gTable);
+            }
         }
         if (buttonsObj.vDropdown && !header.querySelector('#vDropdown')) {
             header.appendChild(buttonsObj.vDropdown);
@@ -176,8 +178,6 @@ class SnowModel extends BaseModel {
         } else {
             return result;
         }
-
-        console.error('Couldn\'t find element');
     }
     createSearchButtons(isInShadow) {
         var result = {};
@@ -222,7 +222,7 @@ class SnowModel extends BaseModel {
         var self = this;
         var searchButton = document.getElementById('gsButton');
         if (searchButton == undefined) {
-            console.error('Global Search button isn\'t present');
+            this.debug('Global Search button isn\'t present');
             return;
         }
         searchButton.onclick = self.search;
@@ -283,11 +283,7 @@ class SnowModel extends BaseModel {
     // Identifies which type of page we are currently working with
     identifyPageType() {
         // Pretty sure TCP stands for Time Card Portal
-        if (window.location.href.indexOf('tcp') >= 0) {
-            return document.SnowModel.PageTypes.TimeCard;
-        } else {
-            return document.SnowModel.PageTypes.Unknown;
-        }
+        return document.SnowModel.PageTypes.findType();
     }
     // Adds a Clean button to the UI
     addCleanButton() {
@@ -370,16 +366,27 @@ class SnowModel extends BaseModel {
     initialize() {
         var self = this;
         var pageType = this.identifyPageType();
-        if (document.SnowModel.PageTypes.TimeCard == pageType) {
-            waitFor(function() {
-                return $(document).find('div.pull-right').length > 0 && $(document).find('.loader').length == 0;
-            }, function() {
-                self.addCleanButton();
-            }, this.delayTime);
-        } else {
-            this.addElements();
-            this.connectToUi();
-            this.monitorFrame();
+        console.log('Found page type: ' + pageType.name);
+        switch(pageType) {
+            case document.SnowModel.PageTypes.TimeCard:
+                waitFor(function() {
+                    return $(document).find('div.pull-right').length > 0 && $(document).find('.loader').length == 0;
+                }, function() {
+                    self.addCleanButton();
+                }, this.delayTime);
+                break;
+            case document.SnowModel.PageTypes.Change:
+            case document.SnowModel.PageTypes.Incident:
+            case document.SnowModel.PageTypes.Problem:
+            case document.SnowModel.PageTypes.RequestItem:
+                //find iframe div
+                this.updateFrame();
+            case document.SnowModel.PageTypes.Dashboard:
+                this.addElements();
+                this.connectToUi();
+                break;
+            default:
+                console.error("Not sure how to handle this page type", pageType);
         }
     }
 }

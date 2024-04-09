@@ -9,9 +9,8 @@
 ## PwSafe.user.js
 1. Adds a `Quick Password` button to the left side menu.  Using this button will automatically take you to your change password for retrieval.
 ## SNOW.user.js
-1. Adds a `Global Search` to the page header that can handle any Service Now ticket type
-2. Adds a `Go To Global Search Table` button to the header which takes the user to a filterable table that can search any ticket type
-3. Adds a `Vendor Suport Links` dropdown to the header for quick access to our vendor support sites
-4. URLs present in the activity notes are converted into links that create new tabs when clicked
-5. Posting activity can now be submitted via `Ctrl` + `Enter` instead of requiring a mouse click on the `Post` button
-6. Time Sheet Portal now has a `Clean` button to remove time cards with a total of 0 time for the week
+1. Adds a `Global Search` and `Go To Global Search Table` button to the page header that can handle any Service Now ticket type when the existing global search isn't available
+2. Adds a `Vendor Suport Links` dropdown to the header for quick access to our vendor support sites
+3. URLs present in the activity notes are converted into links that create new tabs when clicked
+4. Posting activity can now be submitted via `Ctrl` + `Enter` instead of requiring a mouse click on the `Post` button
+5. Time Sheet Portal now has a `Clean` button to remove time cards with a total of 0 time for the week

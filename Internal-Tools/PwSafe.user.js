@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Password Safe Beyond Insight
 // @namespace    https://github.com/tstudanski/
-// @version      2024.3.8.1
+// @version      2024.5.16.0
 // @description  Shortcuts for using this password management tool
 // @author       Tyler Studanski
 // @match        https://pwsafe.mac.msp.airport/webconsole/*
@@ -17,19 +17,28 @@
 'use strict';
 class PwSafeModel extends BaseModel {
     lightningSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightning-fill" viewBox="0 0 16 16" style="color: yellow;width: 25px;height:auto"><path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641z"></path></svg>';
+    MENU_HOME_BTN_QUERY = 'sh-icon[data-icon-name="menu_home"]';
     constructor() {
         super();
         this.debug('Generated Model');
         var self = this;
         if (!this.onPage('dashboard')) {
             waitFor(function() {
-                return document.querySelector('ae-icon[data-icon-name="menu_home"]');
+                return document.querySelector(self.MENU_HOME_BTN_QUERY);
             }, function() {
-                document.querySelector('ae-icon[data-icon-name="menu_home"]').click();
+                document.querySelector(self.MENU_HOME_BTN_QUERY).click();
             })
         }
+        // Make sure side panel large menu exists and has children before adding button
         waitFor(function() {
-            return document.querySelectorAll('.flex-y.ae-card.card-link').length > 0 && document.querySelectorAll('ul[role="listbox"]').length > 0;
+            var maxMenu = document.querySelectorAll('ul[role="list"]');
+            if (maxMenu.length == 0) {
+                return false;
+            }
+            if (maxMenu[0].children.length == 0) {
+                return false;
+            }
+            return true;
         }, function() {
             self.addQuickPasswordButton()
         });
@@ -37,7 +46,7 @@ class PwSafeModel extends BaseModel {
     addQuickPasswordButton() {
         this.debug('Adding quick button');
         var miniMenu = document.querySelector('.menu__minimized.flex-y.h-center.v-start');
-        var maxMenu = document.querySelector('ul[role="listbox"]');
+        var maxMenu = document.querySelector('ul[role="list"]');
         if (document.querySelector('#qButtonMin')) {
             document.querySelector('#qButtonMin').remove();
         }
@@ -54,11 +63,11 @@ class PwSafeModel extends BaseModel {
         quickButton.removeAttribute('data-assigned-id');
         quickButton.setAttribute('aria-label', 'Quick Password');
         quickButton.children[0].removeAttribute('data-ref');
-        var aeIcon = quickButton.querySelector('ae-icon');
-        aeIcon.removeAttribute('data-icon-name');
-        aeIcon.children[0].remove();
-        aeIcon.appendChild(elmtify(this.lightningSvg));
-        quickButton.querySelector('ae-translate').textContent = 'Quick Password';
+        var icon = quickButton.querySelector('sh-icon');
+        icon.removeAttribute('data-icon-name');
+        icon.children[0].remove();
+        icon.appendChild(elmtify(this.lightningSvg));
+        quickButton.querySelector('sh-translate').textContent = 'Quick Password';
         
         this.makeButtonInteractive(quickButton);
         maxMenu.appendChild(quickButton);
@@ -81,31 +90,29 @@ class PwSafeModel extends BaseModel {
         this.debug('Jumping to change password');
         if (!this.onPage('passwordsafe/home')) {
             // Go to passwords
-            document.querySelector('ae-icon[data-icon-name="menu_passwordsafe"]').click();
+            document.querySelector('sh-icon[data-icon-name="menu_passwordsafe"]').click();
         }
         var self = this;
         // Go into iframe
         waitFor(function() {
-            var frameEle = document.querySelector('iframe#passwordsafeIframe');
-            if (!frameEle) {
-                return false;
-            }
-            return frameEle.contentWindow.document.querySelectorAll('tr.k-master-row').length > 0;
+            // Verify records exist in favorites
+            return document.querySelectorAll('tr.grid__row').length > 0;
         }, function() {
-            var frame = document.querySelector('iframe#passwordsafeIframe').contentWindow.document;
             if (!self.mostChg) {
-                self.mostChg = self.findChangeName(frame);
+                self.mostChg = self.findChangeName(document);
             }
             self.debug(self.mostChg);
             
             // Select most common chg account lightning bolt // TODO Change this to make sure it matches the logged in user account
-            self.mostChg.row.querySelector('.icon-action.onecl').click();
-            
+            self.mostChg.row.querySelector('sh-icon[title="Access"]').click();
             // Retrieve Password
             waitFor(function() {
-                return frame.querySelector('.btn-retrieve-password-ql');
+                // Make sure Access Menu has popped up
+                return document.querySelector('ps-quick-launch-form');
             }, function() {
-                frame.querySelector('.btn-retrieve-password-ql').click();
+                var passwordBtn = Array.from(document.querySelector('ps-quick-launch-form').querySelectorAll('sh-button.filled')).find(e => e.textContent.indexOf('Password') != -1);
+                self.debug(passwordBtn);
+                passwordBtn.children[0].click();
             })
         })
     }
@@ -114,9 +121,9 @@ class PwSafeModel extends BaseModel {
     }
     findChangeName(frame) {
         var nameMap = {};
-        var favAccounts = frame.querySelectorAll('tr.k-master-row');
+        var favAccounts = frame.querySelectorAll('tr.grid__row');
         for (var i = 0; i < favAccounts.length; i++) {
-            var account = favAccounts[i].children[8].textContent;
+            var account = favAccounts[i].children[3].textContent;
             if (account.indexOf('chg.') != -1) {
                 if (!nameMap[account]) {
                     nameMap[account] = {

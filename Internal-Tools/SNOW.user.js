@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2024.4.9.0
+// @version      2024.6.21.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -362,6 +362,38 @@ class SnowModel extends BaseModel {
         }
         return false;
     }
+    addSelfAssignBtn() {
+        // Create button
+        var btn = elmtify('<span class="btn btn-default btn-ref" style="padding-left: -;padding-left: 0px;padding-right: 0px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"></path></svg></span>');
+        // Add button];
+        var assignedToLine = document.snowModel.frame.querySelectorAll('div[id$="assigned_to"]')[0];
+        var addons = assignedToLine.querySelector('.form-field-addons');
+        // Add function
+        var self = this;
+        btn.onclick = function() {
+            self.selfAssign();
+        }
+        addons.appendChild(btn);
+    }    
+    selfAssign() {
+        // Find fields
+        var groupInput = this.frame.querySelectorAll('input[name$="assignment_group"]')[3];
+        var assignedInput = this.frame.querySelectorAll('input[name$="assigned_to"]')[3];
+        var comments = this.frame.querySelector('#activity-stream-work_notes-textarea');
+        var userName = this.recursiveShadowSearch(document, '.user-menu').ariaLabel;
+        this.debug(groupInput, assignedInput, comments, userName);
+
+        // Find username
+        userName = userName.substring(0, userName.indexOf(':'));
+        // Assign values
+        groupInput.value = 'Application Development Support';
+        groupInput.dispatchEvent(new Event('blur', { 'bubbles': true }));
+        assignedInput.value = userName;
+        assignedInput.dispatchEvent(new Event('blur', { 'bubbles': true }));
+        // Add comment
+        comments.value = 'Self Assigned';
+        comments.dispatchEvent(new Event('change', { 'bubbles': true }));
+    }
     // 1st method to be called to trigger everything
     initialize() {
         var self = this;
@@ -381,6 +413,7 @@ class SnowModel extends BaseModel {
             case document.SnowModel.PageTypes.RequestItem:
                 //find iframe div
                 this.updateFrame();
+                this.addSelfAssignBtn();
             case document.SnowModel.PageTypes.Dashboard:
                 this.addElements();
                 this.connectToUi();

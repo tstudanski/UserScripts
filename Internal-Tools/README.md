@@ -14,3 +14,4 @@
 3. URLs present in the activity notes are converted into links that create new tabs when clicked
 4. Posting activity can now be submitted via `Ctrl` + `Enter` instead of requiring a mouse click on the `Post` button
 5. Time Sheet Portal now has a `Clean` button to remove time cards with a total of 0 time for the week
+6. Tickets now have a profile icon next to the `Assigned to` field.  Using this button will assign the ticket to the **Application Development Support** group and specifically to yourself.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Service Now Enhancements
 // @namespace    https://github.com/tstudanski/
-// @version      2024.6.21.0
+// @version      2025.2.18.0
 // @description  Adds things to Service Now to make it easier to navigate
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://mac.service-now.com/*
@@ -52,10 +52,11 @@ document.SnowModel = {
         Problem: {name:'Problem',search:'problem.do'},
         RequestItem: {name:'RequestItem',search:'req_item.do'},
         TimeCard: {name:'TimeCard',search:'tcp'},
+        Tasks: {name:'Tasks',search:'task_list.do'},
         Unknown: {name:'Unknown',search:'.'},
         values: function() {
             return [this.Change, this.Dashboard, this.Incident, this.Problem, this.RequestItem,
-            this.TimeCard, this.Unknown];
+            this.TimeCard, this.Tasks, this.Unknown];
         },
         findType: function() {
             var cUrl = window.location.href;
@@ -68,14 +69,32 @@ document.SnowModel = {
         }
     }
 }
-
+class RetryModel extends BaseModel {
+    constructor(count) {
+        super();
+        this.MAX_COUNT = count;
+        this.map = {};
+    }
+    canRetry(name) {
+        if (this.map[name] == null) {
+            this.map[name] = this.MAX_COUNT;
+        } else if (this.map[name] <= 0) {
+            console.warn('Made ' + this.MAX_COUNT + ' attempts with: ' + name);
+            return false;
+        }
+        this.debug(name + ' attempt #' + this.map[name]);
+        this.map[name]--;
+        return true;
+    }
+}
 class SnowModel extends BaseModel {
     constructor() {
-        super();
+        super('dev');
         this.frame = null;
         this.workingOn = null;
         this.delayTime = 100; // in milliseconds
         this.pageModule = new PageChangeModule(500);
+        this.retry = new RetryModel(50);
         var self = this;
         this.pageModule.onChange = function() {
             self.debug('Page change happened----------------------');
@@ -363,6 +382,17 @@ class SnowModel extends BaseModel {
         return false;
     }
     addSelfAssignBtn() {
+        // The frame is required
+        this.debug(this.pageType.name, document, this.frame);
+        // if (this.retry.canRetry('addSelfAssignBtn') && this.frame == null) {
+             this.updateFrame();
+        //     this.addSelfAssignBtn();
+        //     return;
+        // }
+        // if (this.frame == null) {
+        //     console.error("Couldn't add SelfAssign button: ", this.pageType.name, document, this.frame);
+        //     return;
+        // }
         // Create button
         var btn = elmtify('<span class="btn btn-default btn-ref" style="padding-left: -;padding-left: 0px;padding-right: 0px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"></path></svg></span>');
         // Add button];
@@ -394,10 +424,28 @@ class SnowModel extends BaseModel {
         comments.value = 'Self Assigned';
         comments.dispatchEvent(new Event('change', { 'bubbles': true }));
     }
+    // Opens the only result automatically
+    autoOpen() {
+        // Make sure there is only 1 result
+        var results = this.frame.querySelectorAll('.formlink');
+        if (results.length == 0) {
+            this.debug('No results');
+        } else if (results.length > 1) {
+            this.debug('Too man results');
+        } else {
+            console.log('Found 1 result.  Opening soon...');
+        }
+        
+        // Open result after a breif pause
+        setTimeout(function() {
+            results[0].click();
+        },500);
+    }
     // 1st method to be called to trigger everything
     initialize() {
         var self = this;
         var pageType = this.identifyPageType();
+        this.pageType = pageType;
         console.log('Found page type: ' + pageType.name);
         switch(pageType) {
             case document.SnowModel.PageTypes.TimeCard:
@@ -411,12 +459,18 @@ class SnowModel extends BaseModel {
             case document.SnowModel.PageTypes.Incident:
             case document.SnowModel.PageTypes.Problem:
             case document.SnowModel.PageTypes.RequestItem:
-                //find iframe div
-                this.updateFrame();
-                this.addSelfAssignBtn();
+                self.addSelfAssignBtn();
             case document.SnowModel.PageTypes.Dashboard:
                 this.addElements();
                 this.connectToUi();
+                break;
+            case document.SnowModel.PageTypes.Tasks:
+                this.updateFrame();
+                waitFor(function() {
+                    return self.frame;
+                }, function() {
+                    self.autoOpen();
+                }, this.delayTime);
                 break;
             default:
                 console.error("Not sure how to handle this page type", pageType);

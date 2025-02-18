@@ -57,6 +57,7 @@ class E1TimeKeeping extends BaseModel {
         this.debug('Adding buttons');
         this.changeDatesToButtons();
         this.changePayTypeToRadio();
+        console.log('Added buttons');
     }
     changeDatesToButtons() {
         this.debug('Converting dates to buttons');
@@ -96,6 +97,7 @@ class E1TimeKeeping extends BaseModel {
 
         // Start with Regular selected
         payTypeDiv.find('input[name="payType"][value="1"]').click();
+        console.log('Added radio buttons');
     }
     updateFrameHandles() {
         this.debug('Updating frame reference');

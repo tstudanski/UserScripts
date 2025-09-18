@@ -15,3 +15,6 @@
 4. Posting activity can now be submitted via `Ctrl` + `Enter` instead of requiring a mouse click on the `Post` button
 5. Time Sheet Portal now has a `Clean` button to remove time cards with a total of 0 time for the week
 6. Tickets now have a profile icon next to the `Assigned to` field.  Using this button will assign the ticket to the **Application Development Support** group and specifically to yourself.
+## [Commission-Meetings.user.js](https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/Commission-Meetings.user.js)
+1. Adds playback speed buttons (**Faster** and **Slower**) to the video to make it easier to change the playback speed.
+2. Resume play jumps the video close to the same timestamp as when it was last viewed

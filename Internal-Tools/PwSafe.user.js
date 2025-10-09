@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Password Safe Beyond Insight
 // @namespace    https://github.com/tstudanski/
-// @version      2024.5.23.0
+// @version      2025.10.09.0
 // @description  Shortcuts for using this password management tool
 // @author       Tyler Studanski
 // @match        https://pwsafe.mac.msp.airport/webconsole/*
@@ -11,6 +11,7 @@
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/BaseModel.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/WaitFor.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/Elmtify.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/Guarantee.js
 // @grant        none
 // ==/UserScript==
 
@@ -30,7 +31,11 @@ class PwSafeModel extends BaseModel {
             })
         }
         // Make sure side panel large menu exists and has children before adding button
-        waitFor(function() {
+        
+        guarantee(function() {
+            return document.querySelectorAll('#qButtonMin').length == 1 && document.querySelectorAll('#qButtonMax').length == 1
+        }, function() {
+            waitFor(function() {
             var maxMenu = document.querySelectorAll('ul[role="list"]');
             if (maxMenu.length == 0) {
                 return false;
@@ -39,8 +44,9 @@ class PwSafeModel extends BaseModel {
                 return false;
             }
             return true;
-        }, function() {
-            self.addQuickPasswordButton()
+            }, function() {
+                self.addQuickPasswordButton();
+            })
         });
     }
     addQuickPasswordButton() {

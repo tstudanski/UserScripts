@@ -8,6 +8,8 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=metroairports.granicus.com
 // @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/Commission-Meetings.user.js
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/Commission-Meetings.user.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/BaseModel.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/LocalStorageRepoService.js
 // @grant        none
 // ==/UserScript==
 
@@ -40,6 +42,7 @@ class Enhancements {
         this.playerElement = document.querySelector('.fp-player');
         this.seekForward = document.querySelector('.seek-forward');
         this.videoId = window.location.href.substring(window.location.href.lastIndexOf('/') + 1, window.location.href.indexOf('?'));
+        this.repo = new LocalStorageRepoService('CommissionMeetings');
     }
 
     // Fakes a keystroke to allow the user to click instead
@@ -122,7 +125,7 @@ class Enhancements {
     monitorTime() {
         var self = this;
         setInterval(function () {
-            localStorage.setItem(self.videoId, self.captureTime());
+            self.repo.set(self.videoId, self.captureTime());
         }, this.TimeCheckInMils);
         console.log('Now monitoring watch time');
     }
@@ -130,7 +133,7 @@ class Enhancements {
     // This jumps the video to nearly the same place it was previously watched to resume viewing if the user left
     resume() {
         // Get the previous watched time
-        var previousTime = localStorage[this.videoId];
+        var previousTime = this.repo.get(this.videoId);
         if (previousTime) {
             // Jump to that point in the video
             this.jumpToTime(previousTime);

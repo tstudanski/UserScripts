@@ -1,14 +1,9 @@
 /// Plugin service that uses GM to store and retrieve data
-/// Depends on BaseModel
+/// Depends on BaseRepoService
 /// Requires @grant for: GM_setValue, GM_getValue, GM_deleteValue, GM_listValues
-class GMRepoService extends BaseModel {
+class GMRepoService extends BaseRepoService {
     constructor(dbName, env) {
-        super(env);
-        this.dbName = dbName;
-    }
-
-    toDBKey(key) {
-        return this.dbName + '_' + key;
+        super(dbName, env);
     }
 
     set(key, value) {
@@ -28,7 +23,7 @@ class GMRepoService extends BaseModel {
         for (var i = 0; i < allKeys.length; i++) {
             var key = allKeys[i];
             if (key.startsWith(this.dbName + '_')) {
-                values[key] = GM_getValue(key);
+                values[this.fromDBKey(key)] = GM_getValue(key);
             }
         }
         this.debug(`Getting all ${Object.keys(values).length} GM storage keys for db: ${this.dbName}`);

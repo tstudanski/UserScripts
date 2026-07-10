@@ -1,13 +1,8 @@
 /// Plugin service that uses local storage to store and retrieve data
-/// Depends on BaseModel
-class LocalStorageRepoService extends BaseModel {
+/// Depends on BaseRepoService
+class LocalStorageRepoService extends BaseRepoService {
     constructor(dbName, env) {
-        super(env);
-        this.dbName = dbName;
-    }
-
-    toDBKey(key) {
-        return this.dbName + '_' + key;
+        super(dbName, env);
     }
 
     set(key, value) {
@@ -27,7 +22,7 @@ class LocalStorageRepoService extends BaseModel {
             var key = localStorage.key(i);
             if (key.startsWith(this.dbName + '_')) {
                 var value = localStorage.getItem(key);
-                values[key] = JSON.parse(value);
+                values[this.fromDBKey(key)] = JSON.parse(value);
             }
         }
         this.debug(`Getting all ${Object.keys(values).length} local storage keys for db: ${this.dbName}`);

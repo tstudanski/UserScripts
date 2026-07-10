@@ -6,15 +6,19 @@ class LocalStorageRepoService extends BaseModel {
         this.dbName = dbName;
     }
 
+    toDBKey(key) {
+        return this.dbName + '_' + key;
+    }
+
     set(key, value) {
-        var newKey = this.dbName + '_' + key;
-        this.debug('Setting local storage key: ' + newKey + ' to value: ' + JSON.stringify(value));
+        var newKey = this.toDBKey(key);
+        this.debug(`Setting local storage key: ${newKey} to value: ${JSON.stringify(value)}`);
         localStorage.setItem(newKey, JSON.stringify(value));
     }
     get(key) {
-        var newKey = this.dbName + '_' + key;
+        var newKey = this.toDBKey(key);
         var value = localStorage.getItem(newKey);
-        this.debug('Getting local storage key: ' + newKey + ' with value: ' + value);
+        this.debug(`Getting local storage key: ${newKey} with value: ${value}`);
         return JSON.parse(value);
     }
     getAll() {
@@ -26,12 +30,12 @@ class LocalStorageRepoService extends BaseModel {
                 values[key] = JSON.parse(value);
             }
         }
-        this.debug('Getting all ' + Object.keys(values).length + ' local storage keys for db: ' + this.dbName);
+        this.debug(`Getting all ${Object.keys(values).length} local storage keys for db: ${this.dbName}`);
         return values;
     }
     delete(key) {
-        var newKey = this.dbName + '_' + key;
+        var newKey = this.toDBKey(key);
         localStorage.removeItem(newKey);
-        this.debug('Deleted local storage key: ' + newKey);
+        this.debug(`Deleted local storage key: ${newKey}`);
     }
 }

@@ -1,8 +1,8 @@
 /// Plugin service that uses local storage to store and retrieve data
 /// Depends on BaseModel
 class LocalStorageRepoService extends BaseModel {
-    constructor(dbName) {
-        super();
+    constructor(dbName, env) {
+        super(env);
         this.dbName = dbName;
     }
 

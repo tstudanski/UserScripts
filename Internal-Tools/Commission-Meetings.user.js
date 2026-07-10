@@ -14,7 +14,7 @@
 // ==/UserScript==
 
 'use strict';
-class Enhancements {
+class Enhancements extends BaseModel {
     // How often to remember watch time
     TimeCheckInMils = 5000
     // Represents pressing shift + right arrow key
@@ -39,6 +39,7 @@ class Enhancements {
     }
 
     constructor() {
+        super();
         this.playerElement = document.querySelector('.fp-player');
         this.seekForward = document.querySelector('.seek-forward');
         this.videoId = window.location.href.substring(window.location.href.lastIndexOf('/') + 1, window.location.href.indexOf('?'));

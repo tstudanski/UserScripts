@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Commission Meetings
 // @namespace    https://github.com/tstudanski/
-// @version      2026.07.10.0
+// @version      2026.07.10.1
 // @description  Adds helpful functions to the site.  Currently this adds playback speed buttons and remembers how much of the video has been watched.
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://metroairports.granicus.com/player/clip/*
@@ -43,7 +43,8 @@ class Enhancements extends BaseModel {
         this.playerElement = document.querySelector('.fp-player');
         this.seekForward = document.querySelector('.seek-forward');
         this.videoId = window.location.href.substring(window.location.href.lastIndexOf('/') + 1, window.location.href.indexOf('?'));
-        this.repo = new LocalStorageRepoService('CommissionMeetings');
+        this.repo = new LocalStorageRepoService('CommissionMeetings', this.env);
+        this.player = flowplayer('.flowplayer');
     }
 
     // Fakes a keystroke to allow the user to click instead
@@ -77,64 +78,33 @@ class Enhancements extends BaseModel {
         var sideColumn = document.querySelector('.fp-controls');
         sideColumn.append(slower);
         sideColumn.append(faster);
-    }
 
-    // Captures how far into the video the user is
-    captureTime() {
-        return document.querySelector('.fp-elapsed').textContent;
-    }
-
-    // Convert time to an object
-    // timeString: Takes a string in the format [hh:]mm:ss and returns it as an object
-    createTime(timeString) {
-        var parts = timeString.split(':');
-        var hour, min, sec;
-        if (parts.length == 3) {
-            hour = parseInt(parts[0]);
-            min = parseInt(parts[1]);
-            sec = parseInt(parts[2]);
-        } else {
-            hour = 0;
-            min = parseInt(parts[0]);
-            sec = parseInt(parts[1]);
-        }
-        return {hours: hour, minutes: min, seconds: sec};
-    }
-
-    // Takes a time string and converts it to seconds
-    // timeString: Takes a string in the format [hh:]mm:ss and returns it as an object
-    toSeconds(timeString) {
-        var timeObj = this.createTime(timeString);
-        var seconds = timeObj.seconds;
-        seconds += timeObj.minutes * 60;
-        seconds += timeObj.hours * 3600;
-        return seconds;
+        this.debug('Added playback speed buttons to the video player');
     }
 
     // Updates the player to just before the requested time
     // time: the desired time to go to in the format [hh:]mm:ss
     jumpToTime(time) {
-        // convert time to seconds
-        var seconds = this.toSeconds(time);
-        var player = flowplayer('.flowplayer');
-
         // ensure player is ready before seeking
-        player.on('ready', function(e, api) {
+        this.player.on('ready', function(e, api) {
             // Example: jump to 1 minute 15 seconds
-            api.seek(seconds);
+            api.seek(time);
         });
 
         // Calling this to make this function work outside of the page load.
-        player.seek(seconds);
+        this.player.seek(time);
     }
 
     // Monitors what timestamp the video is on and periodically updates a reference for this specific video on the client machine
     monitorTime() {
         var self = this;
         setInterval(function () {
-            self.repo.set(self.videoId, self.captureTime());
+            var ctime = self.player.video.time;
+            var ttime = self.player.video.duration;
+            self.repo.set(self.videoId, ctime);
+            self.repo.set(self.videoId + '_percent', ctime / ttime);
         }, this.TimeCheckInMils);
-        console.log('Now monitoring watch time');
+        this.debug('Now monitoring watch time');
     }
 
     // This jumps the video to nearly the same place it was previously watched to resume viewing if the user left

@@ -17,6 +17,18 @@ class LocalStorageRepoService extends BaseModel {
         this.debug('Getting local storage key: ' + newKey + ' with value: ' + value);
         return JSON.parse(value);
     }
+    getAll() {
+        var values = {};
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key.startsWith(this.dbName + '_')) {
+                var value = localStorage.getItem(key);
+                values[key] = JSON.parse(value);
+            }
+        }
+        this.debug('Getting all ' + Object.keys(values).length + ' local storage keys for db: ' + this.dbName);
+        return values;
+    }
     delete(key) {
         var newKey = this.dbName + '_' + key;
         localStorage.removeItem(newKey);

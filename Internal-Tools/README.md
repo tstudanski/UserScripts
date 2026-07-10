@@ -18,3 +18,4 @@
 ## [Commission-Meetings.user.js](https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/Commission-Meetings.user.js)
 1. Adds playback speed buttons (**Faster** and **Slower**) to the video to make it easier to change the playback speed.
 2. Resume play jumps the video close to the same timestamp as when it was last viewed
+3. Adds watch progress meters to the [Metropolitan Airports Commission Meetings Page](https://metroairports.org/resources/commission-meetings) for each video that's been watched

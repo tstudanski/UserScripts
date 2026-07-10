@@ -1,16 +1,21 @@
 // ==UserScript==
 // @name         Commission Meetings
 // @namespace    https://github.com/tstudanski/
-// @version      2026.07.10.1
+// @version      2026.07.10.2
 // @description  Adds helpful functions to the site.  Currently this adds playback speed buttons and remembers how much of the video has been watched.
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://metroairports.granicus.com/player/clip/*
+// @match        https://metroairports.granicus.com/ViewPublisher.php*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=metroairports.granicus.com
 // @downloadURL  https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/Commission-Meetings.user.js
 // @updateURL    https://github.com/tstudanski/UserScripts/raw/main/Internal-Tools/Commission-Meetings.user.js
 // @require      https://github.com/tstudanski/UserScripts/raw/main/common/BaseModel.js
-// @require      https://github.com/tstudanski/UserScripts/raw/main/common/LocalStorageRepoService.js
-// @grant        none
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/RepoServices/BaseRepoService.js
+// @require      https://github.com/tstudanski/UserScripts/raw/main/common/RepoServices/GMRepoService.js
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @grant        GM_listValues
 // ==/UserScript==
 
 'use strict';
@@ -38,13 +43,21 @@ class Enhancements extends BaseModel {
         cancelable: true
     }
 
+    ProgressTemplate = Object.assign(document.createElement('div'), {
+        style: 'height:4px;width:0;background:#3b82f6;z-index:999999'
+    });
+
     constructor() {
         super();
-        this.playerElement = document.querySelector('.fp-player');
-        this.seekForward = document.querySelector('.seek-forward');
+        this.repo = new GMRepoService('CommissionMeetings', this.env);
         this.videoId = window.location.href.substring(window.location.href.lastIndexOf('/') + 1, window.location.href.indexOf('?'));
-        this.repo = new LocalStorageRepoService('CommissionMeetings', this.env);
-        this.player = flowplayer('.flowplayer');
+        this.isVideoPage = false;
+        if (parseInt(this.videoId)) {
+            this.isVideoPage = true;
+            this.playerElement = document.querySelector('.fp-player');
+            this.seekForward = document.querySelector('.seek-forward');
+            this.player = flowplayer('.flowplayer');
+        }
     }
 
     // Fakes a keystroke to allow the user to click instead
@@ -120,10 +133,41 @@ class Enhancements extends BaseModel {
         this.monitorTime();
     }
 
+    // This feature captures the watched status of the video and updates the UI to reflect that.
+    addWatchedStatus() {
+        var self = this;
+        var allVideos = this.repo.getAll();
+        this.debug('All videos watched status: ', allVideos);
+        var videoLinks = Array.from(document.querySelector('#archive').querySelectorAll('a')).filter(link => 'Video' === link.textContent.trim());
+        var videoIds = Object.keys(allVideos).filter(key => !isNaN(key));
+        // Loop through each video link and update the UI to reflect the watched status
+        videoIds.forEach(videoId => {
+            var videoLink = videoLinks.find(link => link.onclick.toString().indexOf('clip_id='+videoId) > -1);
+            if (videoLink) {
+                var percentWatched = allVideos[videoId + '_percent'];
+                var progressElement = self.ProgressTemplate.cloneNode(true);
+                progressElement.style.width = (percentWatched * 100) + '%';
+                if (percentWatched >= 0.9) {
+                    progressElement.style.background = 'green';
+                } else if (percentWatched >= 0.5) {
+                    progressElement.style.background = 'orange';
+                } else {
+                    progressElement.style.background = 'red';
+                }
+                var timeElement = videoLink.parentElement.previousElementSibling.previousElementSibling.previousElementSibling;
+                timeElement.appendChild(progressElement);
+            }
+        });
+    }
+
     // Requests spectific features
     run() {
-        this.addButtons();
-        this.resume();
+        if (this.isVideoPage) {
+            this.addButtons();
+            this.resume();
+        } else {
+            this.addWatchedStatus();
+        }
     }
 }
 

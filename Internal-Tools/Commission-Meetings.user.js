@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Commission Meetings
 // @namespace    https://github.com/tstudanski/
-// @version      2025.09.17.0
+// @version      2026.07.10.0
 // @description  Adds helpful functions to the site.  Currently this adds playback speed buttons and remembers how much of the video has been watched.
 // @author       Tyler Studanski <tyler.studanski@mspmac.org>
 // @match        https://metroairports.granicus.com/player/clip/*
@@ -100,15 +100,21 @@ class Enhancements {
         return {hours: hour, minutes: min, seconds: sec};
     }
 
+    // Takes a time string and converts it to seconds
+    // timeString: Takes a string in the format [hh:]mm:ss and returns it as an object
+    toSeconds(timeString) {
+        var timeObj = this.createTime(timeString);
+        var seconds = timeObj.seconds;
+        seconds += timeObj.minutes * 60;
+        seconds += timeObj.hours * 3600;
+        return seconds;
+    }
+
     // Updates the player to just before the requested time
     // time: the desired time to go to in the format [hh:]mm:ss
     jumpToTime(time) {
         // convert time to seconds
-        var timeObj = this.createTime(time);
-        var seconds = timeObj.seconds;
-        seconds += timeObj.minutes * 60;
-        seconds += timeObj.hours * 3600;
-
+        var seconds = this.toSeconds(time);
         var player = flowplayer('.flowplayer');
 
         // ensure player is ready before seeking
